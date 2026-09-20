@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>After Dark — Jim &amp; Aliana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #180d13;
+    --bg-2: #241019;
+    --card: #2c1420;
+    --card-edge: #4a2231;
+    --ember: #e08b5f;
+    --ember-dim: #a9633f;
+    --rose: #d65b7a;
+    --cream: #f4e9e2;
+    --cream-dim: #c9b6ae;
+    --starter: #7fa88f;
+    --naughty: #d69a4e;
+    --spicy: #d65b3a;
+    --naughtiest: #c22f4a;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, #3a1a26 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, #2c1e13 0%, transparent 55%),
+      var(--bg);
+    color:var(--cream);
+    font-family:'Manrope', sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+  }
+  .stage{
+    width:100%;
+    max-width:520px;
+  }
+  .brand{
+    text-align:center;
+    margin-bottom:22px;
+  }
+  .brand .kicker{
+    font-size:13px;
+    color:var(--ember);
+    letter-spacing:0.04em;
+  }
+  .brand h1{
+    font-family:'Cormorant Garamond', serif;
+    font-weight:600;
+    font-size:44px;
+    margin:2px 0 0;
+    line-height:1;
+  }
+  .brand h1 em{
+    font-style:italic;
+    color:var(--rose);
+  }
+
+  .panel{
+    background:linear-gradient(180deg, var(--card) 0%, #23101a 100%);
+    border:1px solid var(--card-edge);
+    border-radius:20px;
+    padding:26px 24px 22px;
+    box-shadow:0 30px 60px -25px rgba(0,0,0,0.7);
+  }
+
+  /* Players */
+  .players{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin-bottom:22px;
+  }
+  .player{
+    flex:1;
+    text-align:center;
+    padding:10px 8px;
+    border-radius:14px;
+    border:1px solid transparent;
+    transition:border-color .25s ease, background .25s ease;
+    font-family:'Cormorant Garamond', serif;
+    font-size:22px;
+  }
+  .player.active{
+    border-color:var(--ember-dim);
+    background:rgba(224,139,95,0.08);
+  }
+  .player .role{
+    display:block;
+    font-family:'Manrope', sans-serif;
+    font-size:11px;
+    letter-spacing:.03em;
+    color:var(--cream-dim);
+    margin-top:2px;
+  }
+  .vs{
+    font-size:12px;
+    color:var(--ember-dim);
+  }
+
+  /* Levels */
+  .levels{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+    margin-bottom:22px;
+  }
+  .level-btn{
+    background:#1c0e14;
+    border:1px solid var(--card-edge);
+    color:var(--cream-dim);
+    border-radius:12px;
+    padding:10px 4px 9px;
+    font-family:'Manrope', sans-serif;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:transform .15s ease, border-color .15s ease, color .15s ease;
+    text-align:center;
+  }
+  .level-btn small{
+    display:block;
+    font-weight:500;
+    font-size:10px;
+    opacity:.7;
+    margin-top:2px;
+  }
+  .level-btn:hover{ transform:translateY(-2px); }
+  .level-btn[data-level="starter"].active{ border-color:var(--starter); color:var(--starter); box-shadow:0 0 0 1px var(--starter) inset; }
+  .level-btn[data-level="naughty"].active{ border-color:var(--naughty); color:var(--naughty); box-shadow:0 0 0 1px var(--naughty) inset; }
+  .level-btn[data-level="spicy"].active{ border-color:var(--spicy); color:var(--spicy); box-shadow:0 0 0 1px var(--spicy) inset; }
+  .level-btn[data-level="naughtiest"].active{ border-color:var(--naughtiest); color:var(--naughtiest); box-shadow:0 0 0 1px var(--naughtiest) inset; }
+
+  /* Card */
+  .card-wrap{
+    perspective:1200px;
+    margin-bottom:20px;
+  }
+  .card{
+    min-height:200px;
+    border-radius:16px;
+    background:linear-gradient(160deg, #34141f 0%, #200e17 100%);
+    border:1px solid var(--card-edge);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:26px 22px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(circle at 50% 0%, rgba(224,139,95,0.10), transparent 60%);
+    pointer-events:none;
+  }
+  .card .tag{
+    font-size:11px;
+    letter-spacing:.05em;
+    color:var(--ember);
+    margin-bottom:10px;
+  }
+  .card .prompt{
+    font-family:'Cormorant Garamond', serif;
+    font-size:25px;
+    line-height:1.32;
+  }
+  .card .hint{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--cream-dim);
+  }
+
+  /* Choice buttons */
+  .choices{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:14px;
+  }
+  .choice{
+    padding:15px 10px;
+    border-radius:14px;
+    border:1px solid var(--card-edge);
+    background:#1c0e14;
+    color:var(--cream);
+    font-family:'Cormorant Garamond', serif;
+    font-size:20px;
+    cursor:pointer;
+    transition:transform .12s ease, background .2s ease;
+  }
+  .choice:hover{ transform:translateY(-2px); background:#26131c; }
+  .choice.truth{ border-color:#5b7fa8; }
+  .choice.dare{ border-color:var(--rose); }
+
+  .controls{
+    display:flex;
+    gap:10px;
+  }
+  .btn{
+    flex:1;
+    padding:12px 10px;
+    border-radius:12px;
+    border:none;
+    font-family:'Manrope', sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    cursor:pointer;
+  }
+  .btn.next{
+    background:var(--ember);
+    color:#22110a;
+  }
+  .btn.skip{
+    background:transparent;
+    border:1px solid var(--card-edge);
+    color:var(--cream-dim);
+  }
+
+  .footer-note{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--cream-dim);
+    margin-top:16px;
+    opacity:.65;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="lockStage" style="max-width:360px;">
+  <div class="brand">
+    <div class="kicker">PRIVATE</div>
+    <h1>Game <em>Night</em></h1>
+  </div>
+  <div class="panel">
+    <p style="text-align:center;color:var(--cream-dim);font-size:14px;margin-top:0;">Enter the passcode to continue.</p>
+    <input id="passInput" type="password" placeholder="Passcode" autocomplete="off"
+      style="width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--card-edge);background:#1c0e14;color:var(--cream);font-family:'Manrope',sans-serif;font-size:15px;margin-bottom:12px;">
+    <button id="unlockBtn" class="btn next" style="width:100%;">Enter</button>
+    <p id="lockError" style="text-align:center;color:var(--rose);font-size:12.5px;min-height:16px;margin:10px 0 0;"></p>
+  </div>
+</div>
+
+<div class="stage" id="gameStage" style="display:none;">
+  <div class="brand">
+    <div class="kicker">JUST THE TWO OF YOU</div>
+    <h1>After <em>Dark</em></h1>
+  </div>
+
+  <div class="panel">
+
+    <div class="players">
+      <div class="player" id="playerJim">Jim<span class="role" id="roleJim">choosing</span></div>
+      <div class="vs">&amp;</div>
+      <div class="player" id="playerAliana">Aliana<span class="role" id="roleAliana">choosing</span></div>
+    </div>
+
+    <div class="levels" id="levels">
+      <button class="level-btn" data-level="starter">Starter<small>warm up</small></button>
+      <button class="level-btn" data-level="naughty">Naughty<small>a little bold</small></button>
+      <button class="level-btn" data-level="spicy">Spicy<small>heats up</small></button>
+      <button class="level-btn" data-level="naughtiest">Naughtiest<small>no holding back</small></button>
+    </div>
+
+    <div class="card-wrap">
+      <div class="card" id="card">
+        <div class="tag" id="cardTag">READY WHEN YOU ARE</div>
+        <div class="prompt" id="cardPrompt">Pick a level, then choose truth or dare to begin.</div>
+        <div class="hint" id="cardHint"></div>
+      </div>
+    </div>
+
+    <div class="choices" id="choices">
+      <button class="choice truth" data-type="truth">Truth</button>
+      <button class="choice dare" data-type="dare">Dare</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn skip" id="skipBtn">Skip</button>
+      <button class="btn next" id="nextBtn">Pass the turn →</button>
+    </div>
+
+    <div class="footer-note">Play at your own pace. Either of you can call it whenever.</div>
+  </div>
+</div>
+
+<script>
+// --- Passcode gate ---------------------------------------------------
+// Change this to whatever you like. It's a soft privacy screen only,
+// not real security (anyone who views the page source can find it).
+const PASSCODE = "letsplay";
+
+document.getElementById('unlockBtn').addEventListener('click', tryUnlock);
+document.getElementById('passInput').addEventListener('keydown', (e)=>{
+  if (e.key === 'Enter') tryUnlock();
+});
+function tryUnlock(){
+  const val = document.getElementById('passInput').value.trim().toLowerCase();
+  if (val === PASSCODE.toLowerCase()){
+    document.getElementById('lockStage').style.display = 'none';
+    document.getElementById('gameStage').style.display = 'block';
+  } else {
+    document.getElementById('lockError').textContent = "That's not it — try again.";
+  }
+}
+</script>
+
+<script>
+// ---------------------------------------------------------------
+// CONTENT — edit any of these arrays to make it your own.
+// Each level has truth[] and dare[] prompts.
+// ---------------------------------------------------------------
+const CONTENT = {
+  starter: {
+    truth: [
+      "What was your first real impression of me?",
+      "What's a small thing I do that you secretly love?",
+      "What's the best date we've had so far?",
+      "What made you decide you wanted this — us?",
+      "What's something you find attractive about me that I probably don't know?",
+      "What's a song that reminds you of me?",
+      "What's one thing you'd want us to do more of?",
+      "What's your favourite way I say your name?",
+    ],
+    dare: [
+      "Give me a genuine compliment, looking me in the eye.",
+      "Recreate the moment we first met.",
+      "Whisper the nicest thing you can think of about me.",
+      "Give me a slow, lingering hug for 20 seconds.",
+      "Feed me something without using your hands... wait, use your hands, just make it sweet.",
+      "Do your best impression of me.",
+      "Pick a song and slow dance with me for one verse.",
+      "Tell me your favourite memory of us, holding my hands the whole time.",
+    ]
+  },
+  naughty: {
+    truth: [
+      "What's something you think about me when I'm not around?",
+      "What's the boldest thought you've had about tonight?",
+      "Where's your favourite place to be kissed?",
+      "What outfit of mine do you secretly want to see more of?",
+      "What's something you've wanted to try with me but haven't asked for?",
+      "On a scale of 1–10, how much self-control are you using right now?",
+      "What's the first thing you noticed about my body?",
+      "What's a compliment you love hearing in the bedroom?",
+    ],
+    dare: [
+      "Kiss me somewhere you don't usually kiss me.",
+      "Trace one finger slowly along my jawline, then down my neck.",
+      "Whisper something naughty in my ear — no giggling allowed.",
+      "Give me a slow neck kiss for 15 seconds.",
+      "Bite your lip and hold eye contact with me for 10 seconds.",
+      "Let me choose one item of your clothing to loosen or remove.",
+      "Straddle my lap for the next round.",
+      "Give me a lap dance for 30 seconds — no music required.",
+    ]
+  },
+  spicy: {
+    truth: [
+      "What's a fantasy you've never told me about?",
+      "What's the naughtiest place you've thought about being with me?",
+      "What turns you on most about how I touch you?",
+      "What's something you want me to do to you right now?",
+      "How do you want tonight to end?",
+      "What's the most turned on you've been by something I said?",
+      "Describe, in detail, what you want to happen next.",
+      "What's one thing you want me to be rougher or slower about?",
+    ],
+    dare: [
+      "Remove one item of your clothing, slowly, while holding my gaze.",
+      "Kiss me deeply for a full minute, no stopping.",
+      "Let me undress one item of your clothing.",
+      "Straddle me and kiss my neck until I tell you to stop.",
+      "Guide my hands to exactly where you want them right now.",
+      "Take off your top and let me look at you for 10 seconds before anything else.",
+      "Whisper exactly what you want me to do next, then let me do it.",
+      "Give me a slow, teasing lap dance — clothes optional.",
+    ]
+  },
+  naughtiest: {
+    truth: [
+      "What's the one thing you want tonight to end with?",
+      "If we had no rules at all right now, what would you ask me to do?",
+      "What's the dirtiest thing you've ever wanted to say to me but held back?",
+      "What position have you been thinking about all day?",
+      "What do you want me to do to you the second this game ends?",
+    ],
+    dare: [
+      "Remove another item of clothing — your choice which.",
+      "Get as close to me as possible and don't break eye contact for a full minute.",
+      "Take the lead completely for the next five minutes — I do whatever you say.",
+      "End the game here and take me to bed.",
+      "Whatever you were both thinking during that last truth — go do it.",
+    ]
+  }
+};
+
+const LEVEL_LABELS = {
+  starter: "STARTER",
+  naughty: "NAUGHTY",
+  spicy: "SPICY",
+  naughtiest: "NAUGHTIEST"
+};
+
+let currentLevel = null;
+let turn = 'Jim'; // whose turn it is to ANSWER
+const usedPrompts = {}; // track used prompts per level+type to avoid repeats until exhausted
+
+function initUsed(){
+  Object.keys(CONTENT).forEach(lvl=>{
+    usedPrompts[lvl] = { truth: [], dare: [] };
+  });
+}
+initUsed();
+
+const levelsEl = document.getElementById('levels');
+const cardEl = document.getElementById('card');
+const cardTag = document.getElementById('cardTag');
+const cardPrompt = document.getElementById('cardPrompt');
+const cardHint = document.getElementById('cardHint');
+const choicesEl = document.getElementById('choices');
+const nextBtn = document.getElementById('nextBtn');
+const skipBtn = document.getElementById('skipBtn');
+const roleJim = document.getElementById('roleJim');
+const roleAliana = document.getElementById('roleAliana');
+const playerJim = document.getElementById('playerJim');
+const playerAliana = document.getElementById('playerAliana');
+
+function updateTurnUI(){
+  const isJim = turn === 'Jim';
+  roleJim.textContent = isJim ? 'answering' : 'asking';
+  roleAliana.textContent = isJim ? 'asking' : 'answering';
+  playerJim.classList.toggle('active', isJim);
+  playerAliana.classList.toggle('active', !isJim);
+}
+
+function setLevel(level){
+  currentLevel = level;
+  [...levelsEl.children].forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.level === level);
+  });
+  cardTag.textContent = LEVEL_LABELS[level] + " — CHOOSE ONE";
+  cardPrompt.textContent = `${turn}, pick truth or dare.`;
+  cardHint.textContent = "";
+  choicesEl.style.display = 'grid';
+}
+
+function pickPrompt(level, type){
+  const pool = CONTENT[level][type];
+  const used = usedPrompts[level][type];
+  if (used.length >= pool.length) usedPrompts[level][type] = [];
+  const available = pool.map((_,i)=>i).filter(i=>!usedPrompts[level][type].includes(i));
+  const idx = available[Math.floor(Math.random()*available.length)];
+  usedPrompts[level][type].push(idx);
+  return pool[idx];
+}
+
+function showPrompt(type){
+  if (!currentLevel){
+    cardPrompt.textContent = "Pick a level first, love.";
+    return;
+  }
+  const prompt = pickPrompt(currentLevel, type);
+  cardTag.textContent = `${LEVEL_LABELS[currentLevel]} · ${type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
+  cardPrompt.textContent = prompt;
+  cardHint.textContent = "Then pass the turn.";
+  choicesEl.style.display = 'none';
+}
+
+levelsEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.level-btn');
+  if (!btn) return;
+  setLevel(btn.dataset.level);
+});
+
+choicesEl.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.choice');
+  if (!btn) return;
+  showPrompt(btn.dataset.type);
+});
+
+nextBtn.addEventListener('click', ()=>{
+  turn = turn === 'Jim' ? 'Aliana' : 'Jim';
+  updateTurnUI();
+  if (currentLevel){
+    cardTag.textContent = LEVEL_LABELS[currentLevel] + " — CHOOSE ONE";
+    cardPrompt.textContent = `${turn}, pick truth or dare.`;
+    cardHint.textContent = "";
+    choicesEl.style.display = 'grid';
+  }
+});
+
+skipBtn.addEventListener('click', ()=>{
+  if (currentLevel){
+    cardTag.textContent = LEVEL_LABELS[currentLevel] + " — CHOOSE ONE";
+    cardPrompt.textContent = `Skipped. ${turn}, pick truth or dare.`;
+    cardHint.textContent = "";
+    choicesEl.style.display = 'grid';
+  }
+});
+
+choicesEl.style.display = 'none';
+updateTurnUI();
+</script>
+
+</body>
+</html>
