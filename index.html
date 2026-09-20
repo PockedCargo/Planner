@@ -257,6 +257,20 @@
   </div>
 </div>
 
+<div class="stage" id="identityStage" style="max-width:360px;display:none;">
+  <div class="brand">
+    <div class="kicker">ONE MORE THING</div>
+    <h1>Who's <em>Playing</em></h1>
+  </div>
+  <div class="panel">
+    <p style="text-align:center;color:var(--cream-dim);font-size:14px;margin-top:0;">Which of you is on this device? This is remembered on this device only.</p>
+    <div style="display:flex;gap:10px;">
+      <button class="choice" data-who="Jim" style="flex:1;border-color:var(--card-edge);">I'm Jim</button>
+      <button class="choice" data-who="Aliana" style="flex:1;border-color:var(--card-edge);">I'm Aliana</button>
+    </div>
+  </div>
+</div>
+
 <div class="stage" id="gameStage" style="display:none;">
   <div class="brand">
     <div class="kicker">JUST THE TWO OF YOU</div>
@@ -264,6 +278,11 @@
   </div>
 
   <div class="panel">
+
+    <p style="text-align:center;font-size:12px;color:var(--cream-dim);margin-top:0;">
+      You are <strong id="whoAmI" style="color:var(--ember);">—</strong>
+      · <a href="#" id="switchWho" style="color:var(--cream-dim);">not you?</a>
+    </p>
 
     <div class="players">
       <div class="player" id="playerJim">Jim<span class="role" id="roleJim">choosing</span></div>
@@ -325,7 +344,12 @@ async function tryUnlock(){
   const hash = await sha256(val);
   if (hash === PASSCODE_HASH){
     document.getElementById('lockStage').style.display = 'none';
-    document.getElementById('gameStage').style.display = 'block';
+    const savedWho = localStorage.getItem('afterdark_who');
+    if (savedWho === 'Jim' || savedWho === 'Aliana'){
+      document.getElementById('gameStage').style.display = 'block';
+    } else {
+      document.getElementById('identityStage').style.display = 'block';
+    }
   } else {
     document.getElementById('lockError').textContent = "That's not it — try again.";
   }
@@ -466,6 +490,24 @@ const LEVEL_LABELS = {
 };
 
 let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let myName = localStorage.getItem('afterdark_who') || null;
+
+document.querySelectorAll('#identityStage [data-who]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    myName = btn.dataset.who;
+    localStorage.setItem('afterdark_who', myName);
+    document.getElementById('identityStage').style.display = 'none';
+    document.getElementById('gameStage').style.display = 'block';
+    render();
+  });
+});
+document.getElementById('switchWho').addEventListener('click', (e)=>{
+  e.preventDefault();
+  localStorage.removeItem('afterdark_who');
+  myName = null;
+  document.getElementById('gameStage').style.display = 'none';
+  document.getElementById('identityStage').style.display = 'block';
+});
 
 const levelsEl = document.getElementById('levels');
 const cardTag = document.getElementById('cardTag');
@@ -486,6 +528,9 @@ function writeState(patch){
 }
 
 function render(){
+  const whoAmIEl = document.getElementById('whoAmI');
+  if (whoAmIEl) whoAmIEl.textContent = myName || '—';
+
   const isJim = state.turn === 'Jim';
   roleJim.textContent = isJim ? 'answering' : 'asking';
   roleAliana.textContent = isJim ? 'asking' : 'answering';
@@ -528,15 +573,27 @@ levelsEl.addEventListener('click', (e)=>{
 choicesEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('.choice');
   if (!btn || !state.level) return;
+  if (myName !== state.turn){
+    cardHint.textContent = `It's ${state.turn}'s turn to answer, not yours.`;
+    return;
+  }
   const { text, newUsed } = pickPrompt(state.level, btn.dataset.type);
   writeState({ phase: 'revealed', type: btn.dataset.type, promptText: text, used: newUsed });
 });
 
 nextBtn.addEventListener('click', ()=>{
+  if (myName !== state.turn){
+    cardHint.textContent = `Only ${state.turn} can pass the turn right now.`;
+    return;
+  }
   writeState({ turn: state.turn === 'Jim' ? 'Aliana' : 'Jim', phase: 'idle', type: null, promptText: '' });
 });
 
 skipBtn.addEventListener('click', ()=>{
+  if (myName !== state.turn){
+    cardHint.textContent = `Only ${state.turn} can skip right now.`;
+    return;
+  }
   writeState({ phase: 'idle', type: null, promptText: '' });
 });
 
