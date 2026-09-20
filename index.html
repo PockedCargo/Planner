@@ -471,6 +471,45 @@ const DEFAULT_STATE = {
 let state = null;
 let myName = localStorage.getItem('afterdark_who') || null;
 
+// Sessions live in Firebase between deployments. Older or partially-written
+// sessions may not have every field the current game expects; normalize them
+// before rendering so choosing a name can never leave the game on a blank view.
+function normalizeState(data){
+  const fallback = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  const players = Array.isArray(data?.players)
+    ? data.players.filter(name => typeof name === 'string' && name.trim())
+    : [];
+  const validOrder = Array.isArray(data?.order)
+    && data.order.length === players.length
+    && new Set(data.order).size === players.length
+    && data.order.every(index => Number.isInteger(index) && index >= 0 && index < players.length);
+  const normalizedUsed = {};
+
+  Object.keys(CONTENT).forEach(level => {
+    normalizedUsed[level] = {};
+    ['truth', 'dare'].forEach(type => {
+      const bag = data?.used?.[level]?.[type];
+      normalizedUsed[level][type] = Array.isArray(bag?.order) && Number.isInteger(bag?.cursor)
+        ? { order: bag.order, cursor: Math.max(0, bag.cursor) }
+        : fallback.used[level][type];
+    });
+  });
+
+  const level = Object.hasOwn(CONTENT, data?.level) ? data.level : null;
+  return {
+    ...fallback,
+    ...data,
+    players,
+    order: validOrder ? data.order : players.map((_, index) => index),
+    currentIndex: Number.isInteger(data?.currentIndex) && data.currentIndex >= 0 ? data.currentIndex : 0,
+    level,
+    phase: data?.phase === 'revealed' && level ? 'revealed' : 'idle',
+    type: data?.type === 'truth' || data?.type === 'dare' ? data.type : null,
+    promptText: typeof data?.promptText === 'string' ? data.promptText : '',
+    used: normalizedUsed
+  };
+}
+
 // =================================================================
 // STAGE 3 — GROUP SETUP (host builds the room; others just join)
 // =================================================================
@@ -507,9 +546,9 @@ document.getElementById('startRoomBtn').addEventListener('click', async ()=>{
   // Keep this device in sync immediately.  Waiting for Firebase's live
   // listener here left `state` null when the host chose their identity,
   // so render() had nothing to show and the screen appeared stuck.
-  state = fresh;
+  state = normalizeState(fresh);
   try {
-    await gameRef.set(fresh);
+    await gameRef.set(state);
   } catch (error) {
     document.getElementById('setupError').textContent = "Couldn't create the room — check your connection and try again.";
     return;
@@ -542,7 +581,7 @@ function showIdentityStage(players){
           const snap = await gameRef.once('value');
           const room = snap.val();
           if (!room || !room.players || !room.players.length) throw new Error('Room unavailable');
-          state = room;
+          state = normalizeState(room);
           errorEl.textContent = '';
         } catch (error) {
           errorEl.textContent = "Couldn't load the room. Check your connection and try again.";
@@ -575,7 +614,7 @@ function enterRoom(){
     if (!data || !data.players || data.players.length === 0){
       setupStage.style.display = 'block';
     } else {
-      state = data;
+      state = normalizeState(data);
       const saved = localStorage.getItem('afterdark_who');
       if (saved && state.players.includes(saved)){
         myName = saved;
@@ -698,7 +737,7 @@ choicesEl.style.display = 'none';
 gameRef.on('value', snapshot=>{
   const data = snapshot.val();
   if (data && data.players && data.players.length){
-    state = data;
+    state = normalizeState(data);
     syncStatus.textContent = "Synced live with everyone in the room.";
     if (gameStage.style.display === 'block') render();
   }
