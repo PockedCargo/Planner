@@ -229,9 +229,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const gameRef = db.ref('afterdark/session');
 const licensesRef = db.ref('afterdark/licenses');
-// Keep presence separate from the game state: game updates use set(), while
-// presence must remain independent so a turn change never overwrites it.
-const presenceRef = db.ref('afterdark/presence');
+// Presence stays inside the existing session permission scope. Game updates
+// below use update(), so this child is never overwritten by a turn change.
+const presenceRef = gameRef.child('presence');
 
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -669,7 +669,7 @@ function currentPlayer(){
 
 function writeState(patch){
   state = { ...state, ...patch };
-  gameRef.set(state);
+  gameRef.update(patch);
 }
 
 function render(){
