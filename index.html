@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
   :root{
     --bg: #180d13;
@@ -294,6 +296,7 @@
     </div>
 
     <div class="footer-note">Play at your own pace. Either of you can call it whenever.</div>
+    <div class="footer-note" id="syncStatus" style="margin-top:4px;">Connecting…</div>
   </div>
 </div>
 
@@ -415,19 +418,45 @@ const LEVEL_LABELS = {
   naughtiest: "NAUGHTIEST"
 };
 
-let currentLevel = null;
-let turn = 'Jim'; // whose turn it is to ANSWER
-const usedPrompts = {}; // track used prompts per level+type to avoid repeats until exhausted
+// ---------------------------------------------------------------
+// FIREBASE SETUP — paste your own project's config here.
+// See the README notes below the code for how to get these values.
+// ---------------------------------------------------------------
+const firebaseConfig = {
+  apiKey: "AIzaSyAKuWlsR6KuDY8NIBu1u-PCcB6GDix-ckc",
+  authDomain: "planner-e932f.firebaseapp.com",
+  databaseURL: "https://planner-e932f-default-rtdb.firebaseio.com",
+  projectId: "planner-e932f",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+// Fixed shared room — it's just the two of you, so no room codes needed.
+const gameRef = db.ref('afterdark/session');
 
-function initUsed(){
-  Object.keys(CONTENT).forEach(lvl=>{
-    usedPrompts[lvl] = { truth: [], dare: [] };
-  });
-}
-initUsed();
+const DEFAULT_STATE = {
+  level: null,
+  turn: 'Jim',
+  phase: 'idle',       // idle | choosing | revealed
+  type: null,          // truth | dare
+  promptText: '',
+  used: {              // used prompt indices per level+type, kept in sync
+    starter: { truth: [], dare: [] },
+    naughty: { truth: [], dare: [] },
+    spicy: { truth: [], dare: [] },
+    naughtiest: { truth: [], dare: [] }
+  }
+};
+
+const LEVEL_LABELS = {
+  starter: "STARTER",
+  naughty: "NAUGHTY",
+  spicy: "SPICY",
+  naughtiest: "NAUGHTIEST"
+};
+
+let state = JSON.parse(JSON.stringify(DEFAULT_STATE));
 
 const levelsEl = document.getElementById('levels');
-const cardEl = document.getElementById('card');
 const cardTag = document.getElementById('cardTag');
 const cardPrompt = document.getElementById('cardPrompt');
 const cardHint = document.getElementById('cardHint');
@@ -438,82 +467,90 @@ const roleJim = document.getElementById('roleJim');
 const roleAliana = document.getElementById('roleAliana');
 const playerJim = document.getElementById('playerJim');
 const playerAliana = document.getElementById('playerAliana');
+const syncStatus = document.getElementById('syncStatus');
 
-function updateTurnUI(){
-  const isJim = turn === 'Jim';
+function writeState(patch){
+  state = { ...state, ...patch };
+  gameRef.set(state); // full overwrite keeps both devices deterministic
+}
+
+function render(){
+  const isJim = state.turn === 'Jim';
   roleJim.textContent = isJim ? 'answering' : 'asking';
   roleAliana.textContent = isJim ? 'asking' : 'answering';
   playerJim.classList.toggle('active', isJim);
   playerAliana.classList.toggle('active', !isJim);
-}
 
-function setLevel(level){
-  currentLevel = level;
   [...levelsEl.children].forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.level === level);
+    btn.classList.toggle('active', btn.dataset.level === state.level);
   });
-  cardTag.textContent = LEVEL_LABELS[level] + " — CHOOSE ONE";
-  cardPrompt.textContent = `${turn}, pick truth or dare.`;
-  cardHint.textContent = "";
-  choicesEl.style.display = 'grid';
+
+  if (state.phase === 'idle'){
+    cardTag.textContent = state.level ? LEVEL_LABELS[state.level] + " — CHOOSE ONE" : "READY WHEN YOU ARE";
+    cardPrompt.textContent = state.level ? `${state.turn}, pick truth or dare.` : "Pick a level, then choose truth or dare to begin.";
+    cardHint.textContent = "";
+    choicesEl.style.display = state.level ? 'grid' : 'none';
+  } else if (state.phase === 'revealed'){
+    cardTag.textContent = `${LEVEL_LABELS[state.level]} · ${state.type.toUpperCase()} · FOR ${state.turn.toUpperCase()}`;
+    cardPrompt.textContent = state.promptText;
+    cardHint.textContent = "Then pass the turn.";
+    choicesEl.style.display = 'none';
+  }
 }
 
 function pickPrompt(level, type){
   const pool = CONTENT[level][type];
-  const used = usedPrompts[level][type];
-  if (used.length >= pool.length) usedPrompts[level][type] = [];
-  const available = pool.map((_,i)=>i).filter(i=>!usedPrompts[level][type].includes(i));
+  let used = state.used[level][type];
+  if (used.length >= pool.length) used = [];
+  const available = pool.map((_,i)=>i).filter(i=>!used.includes(i));
   const idx = available[Math.floor(Math.random()*available.length)];
-  usedPrompts[level][type].push(idx);
-  return pool[idx];
-}
-
-function showPrompt(type){
-  if (!currentLevel){
-    cardPrompt.textContent = "Pick a level first, love.";
-    return;
-  }
-  const prompt = pickPrompt(currentLevel, type);
-  cardTag.textContent = `${LEVEL_LABELS[currentLevel]} · ${type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
-  cardPrompt.textContent = prompt;
-  cardHint.textContent = "Then pass the turn.";
-  choicesEl.style.display = 'none';
+  const newUsed = { ...state.used, [level]: { ...state.used[level], [type]: [...used, idx] } };
+  return { text: pool[idx], newUsed };
 }
 
 levelsEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('.level-btn');
   if (!btn) return;
-  setLevel(btn.dataset.level);
+  writeState({ level: btn.dataset.level, phase: 'idle', type: null, promptText: '' });
 });
 
 choicesEl.addEventListener('click', (e)=>{
   const btn = e.target.closest('.choice');
-  if (!btn) return;
-  showPrompt(btn.dataset.type);
+  if (!btn || !state.level) return;
+  const { text, newUsed } = pickPrompt(state.level, btn.dataset.type);
+  writeState({ phase: 'revealed', type: btn.dataset.type, promptText: text, used: newUsed });
 });
 
 nextBtn.addEventListener('click', ()=>{
-  turn = turn === 'Jim' ? 'Aliana' : 'Jim';
-  updateTurnUI();
-  if (currentLevel){
-    cardTag.textContent = LEVEL_LABELS[currentLevel] + " — CHOOSE ONE";
-    cardPrompt.textContent = `${turn}, pick truth or dare.`;
-    cardHint.textContent = "";
-    choicesEl.style.display = 'grid';
-  }
+  writeState({ turn: state.turn === 'Jim' ? 'Aliana' : 'Jim', phase: 'idle', type: null, promptText: '' });
 });
 
 skipBtn.addEventListener('click', ()=>{
-  if (currentLevel){
-    cardTag.textContent = LEVEL_LABELS[currentLevel] + " — CHOOSE ONE";
-    cardPrompt.textContent = `Skipped. ${turn}, pick truth or dare.`;
-    cardHint.textContent = "";
-    choicesEl.style.display = 'grid';
-  }
+  writeState({ phase: 'idle', type: null, promptText: '' });
 });
 
 choicesEl.style.display = 'none';
-updateTurnUI();
+
+// Listen for live updates from either device
+gameRef.on('value', (snapshot)=>{
+  const data = snapshot.val();
+  if (data){
+    state = data;
+    syncStatus.textContent = "Synced live with the other device.";
+  } else {
+    // Nothing in the DB yet — seed it
+    gameRef.set(DEFAULT_STATE);
+    state = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    syncStatus.textContent = "Session started — waiting for the other device.";
+  }
+  render();
+});
+
+gameRef.root.child('.info/connected').on('value', (snap)=>{
+  if (snap.val() === false){
+    syncStatus.textContent = "Reconnecting…";
+  }
+});
 </script>
 
 </body>
