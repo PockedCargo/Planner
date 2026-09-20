@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>After Dark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg: #180d13;
+    --card: #2c1420;
+    --card-edge: #4a2231;
+    --ember: #e08b5f;
+    --ember-dim: #a9633f;
+    --rose: #d65b7a;
+    --cream: #f4e9e2;
+    --cream-dim: #c9b6ae;
+    --starter: #7fa88f;
+    --naughty: #d69a4e;
+    --spicy: #d65b3a;
+    --naughtiest: #c22f4a;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, #3a1a26 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, #2c1e13 0%, transparent 55%),
+      var(--bg);
+    color:var(--cream); font-family:'Manrope', sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:32px 16px;
+  }
+  .stage{ width:100%; max-width:520px; }
+  .brand{ text-align:center; margin-bottom:22px; }
+  .brand .kicker{ font-size:13px; color:var(--ember); letter-spacing:0.04em; }
+  .brand h1{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:44px; margin:2px 0 0; line-height:1; }
+  .brand h1 em{ font-style:italic; color:var(--rose); }
+  .panel{
+    background:linear-gradient(180deg, var(--card) 0%, #23101a 100%);
+    border:1px solid var(--card-edge); border-radius:20px;
+    padding:26px 24px 22px; box-shadow:0 30px 60px -25px rgba(0,0,0,0.7);
+  }
+  p.note{ text-align:center; color:var(--cream-dim); font-size:14px; margin-top:0; }
+  input[type=text], input[type=password]{
+    width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--card-edge);
+    background:#1c0e14; color:var(--cream); font-family:'Manrope',sans-serif; font-size:15px; margin-bottom:10px;
+  }
+  .btn{ padding:12px 10px; border-radius:12px; border:none; font-family:'Manrope', sans-serif; font-weight:600; font-size:13.5px; cursor:pointer; }
+  .btn.full{ width:100%; }
+  .btn.next{ background:var(--ember); color:#22110a; }
+  .btn.skip{ background:transparent; border:1px solid var(--card-edge); color:var(--cream-dim); }
+  .error{ text-align:center; color:var(--rose); font-size:12.5px; min-height:16px; margin:8px 0 0; }
+  .player-inputs{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+  .stepper{ display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:16px; }
+  .stepper button{ width:38px; height:38px; border-radius:50%; border:1px solid var(--card-edge); background:#1c0e14; color:var(--cream); font-size:18px; cursor:pointer; }
+  .stepper .count{ font-family:'Cormorant Garamond', serif; font-size:30px; min-width:40px; text-align:center; }
+  .who-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  .who-grid button{
+    flex:1 1 40%; padding:14px 8px; border-radius:14px; border:1px solid var(--card-edge);
+    background:#1c0e14; color:var(--cream); font-family:'Cormorant Garamond', serif; font-size:19px; cursor:pointer;
+  }
+
+  /* group turn strip */
+  .turn-strip{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:18px; }
+  .turn-chip{
+    padding:6px 12px; border-radius:999px; border:1px solid var(--card-edge);
+    font-size:12.5px; color:var(--cream-dim); background:#1c0e14;
+  }
+  .turn-chip.answering{ border-color:var(--ember); color:var(--ember); background:rgba(224,139,95,0.1); }
+
+  /* level indicator */
+  .level-indicator{ margin-bottom:18px; }
+  .levels{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:8px; }
+  .level-btn{
+    background:#1c0e14; border:1px solid var(--card-edge); color:var(--cream-dim);
+    border-radius:12px; padding:10px 4px 9px; font-family:'Manrope', sans-serif; font-size:12.5px;
+    font-weight:600; cursor:pointer; text-align:center; transition:transform .15s ease;
+  }
+  .level-btn small{ display:block; font-weight:500; font-size:10px; opacity:.7; margin-top:2px; }
+  .level-btn:hover{ transform:translateY(-2px); }
+  .level-btn[data-level="starter"].active{ border-color:var(--starter); color:var(--starter); box-shadow:0 0 0 1px var(--starter) inset; }
+  .level-btn[data-level="naughty"].active{ border-color:var(--naughty); color:var(--naughty); box-shadow:0 0 0 1px var(--naughty) inset; }
+  .level-btn[data-level="spicy"].active{ border-color:var(--spicy); color:var(--spicy); box-shadow:0 0 0 1px var(--spicy) inset; }
+  .level-btn[data-level="naughtiest"].active{ border-color:var(--naughtiest); color:var(--naughtiest); box-shadow:0 0 0 1px var(--naughtiest) inset; }
+  .level-desc{ text-align:center; font-size:12px; color:var(--cream-dim); }
+
+  .card-wrap{ perspective:1200px; margin-bottom:20px; }
+  .card{
+    min-height:200px; border-radius:16px;
+    background:linear-gradient(160deg, #34141f 0%, #200e17 100%);
+    border:1px solid var(--card-edge); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; text-align:center; padding:26px 22px;
+    position:relative; overflow:hidden;
+  }
+  .card::before{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%, rgba(224,139,95,0.10), transparent 60%); pointer-events:none; }
+  .card .tag{ font-size:11px; letter-spacing:.05em; color:var(--ember); margin-bottom:10px; }
+  .card .prompt{ font-family:'Cormorant Garamond', serif; font-size:24px; line-height:1.32; }
+  .card .hint{ margin-top:14px; font-size:12px; color:var(--cream-dim); }
+
+  .choices{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  .choice{
+    padding:15px 10px; border-radius:14px; border:1px solid var(--card-edge); background:#1c0e14;
+    color:var(--cream); font-family:'Cormorant Garamond', serif; font-size:20px; cursor:pointer;
+  }
+  .choice.truth{ border-color:#5b7fa8; }
+  .choice.dare{ border-color:var(--rose); }
+
+  .controls{ display:flex; gap:10px; }
+  .footer-note{ text-align:center; font-size:11.5px; color:var(--cream-dim); margin-top:16px; opacity:.65; }
+  .link{ color:var(--cream-dim); }
+</style>
+</head>
+<body>
+
+<!-- STAGE 1: License / access gate (stands in for a paid subscription check) -->
+<div class="stage" id="licenseStage" style="max-width:360px;">
+  <div class="brand"><div class="kicker">ACCESS</div><h1>Enter Your <em>Code</em></h1></div>
+  <div class="panel">
+    <p class="note">Enter your access code to play.</p>
+    <input type="text" id="licenseInput" placeholder="Access code" autocomplete="off">
+    <button id="licenseBtn" class="btn next full">Activate</button>
+    <p class="error" id="licenseError"></p>
+  </div>
+</div>
+
+<!-- STAGE 2: Passcode -->
+<div class="stage" id="lockStage" style="max-width:360px;display:none;">
+  <div class="brand"><div class="kicker">PRIVATE</div><h1>Game <em>Night</em></h1></div>
+  <div class="panel">
+    <p class="note">Enter the room passcode.</p>
+    <input type="password" id="passInput" placeholder="Passcode" autocomplete="off">
+    <button id="unlockBtn" class="btn next full">Enter</button>
+    <p class="error" id="lockError"></p>
+  </div>
+</div>
+
+<!-- STAGE 3: Group setup (host only, runs once per session) -->
+<div class="stage" id="setupStage" style="max-width:400px;display:none;">
+  <div class="brand"><div class="kicker">SET UP THE ROOM</div><h1>Who's <em>Playing</em></h1></div>
+  <div class="panel">
+    <p class="note">How many players?</p>
+    <div class="stepper">
+      <button id="decBtn">−</button>
+      <div class="count" id="countDisplay">2</div>
+      <button id="incBtn">+</button>
+    </div>
+    <div class="player-inputs" id="playerInputs"></div>
+    <button id="startRoomBtn" class="btn next full">Start the game</button>
+    <p class="error" id="setupError"></p>
+  </div>
+</div>
+
+<!-- STAGE 4: Pick which player you are on this device -->
+<div class="stage" id="identityStage" style="max-width:360px;display:none;">
+  <div class="brand"><div class="kicker">ONE MORE THING</div><h1>Which One's <em>You</em></h1></div>
+  <div class="panel">
+    <p class="note">This is remembered on this device only.</p>
+    <div class="who-grid" id="whoGrid"></div>
+  </div>
+</div>
+
+<!-- STAGE 5: The game -->
+<div class="stage" id="gameStage" style="display:none;">
+  <div class="brand"><div class="kicker" id="groupKicker">GAME NIGHT</div><h1>After <em>Dark</em></h1></div>
+  <div class="panel">
+
+    <p class="note" style="font-size:12px;">
+      You are <strong id="whoAmI" style="color:var(--ember);">—</strong>
+      · <a href="#" id="switchWho" class="link">not you?</a>
+    </p>
+
+    <div class="turn-strip" id="turnStrip"></div>
+
+    <div class="level-indicator">
+      <div class="levels" id="levels">
+        <button class="level-btn" data-level="starter">Starter<small>warm up</small></button>
+        <button class="level-btn" data-level="naughty">Naughty<small>a little bold</small></button>
+        <button class="level-btn" data-level="spicy">Spicy<small>heats up</small></button>
+        <button class="level-btn" data-level="naughtiest">Naughtiest<small>no holding back</small></button>
+      </div>
+      <div class="level-desc" id="levelDesc">Pick a level to start.</div>
+    </div>
+
+    <div class="card-wrap">
+      <div class="card" id="card">
+        <div class="tag" id="cardTag">READY WHEN YOU ARE</div>
+        <div class="prompt" id="cardPrompt">Pick a level, then choose truth or dare.</div>
+        <div class="hint" id="cardHint"></div>
+      </div>
+    </div>
+
+    <div class="choices" id="choices">
+      <button class="choice truth" data-type="truth">Truth</button>
+      <button class="choice dare" data-type="dare">Dare</button>
+    </div>
+
+    <div class="controls">
+      <button class="btn skip" id="skipBtn" style="flex:1;">Skip</button>
+      <button class="btn next" id="nextBtn" style="flex:2;">Pass the turn →</button>
+    </div>
+
+    <div class="footer-note">Play at your own pace. Anyone can call it whenever.</div>
+    <div class="footer-note" id="syncStatus">Connecting…</div>
+  </div>
+</div>
+
+<script>
+// =================================================================
+// FIREBASE
+// =================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAKuWlsR6KuDY8NIBu1u-PCcB6GDix-ckc",
+  authDomain: "planner-e932f.firebaseapp.com",
+  databaseURL: "https://planner-e932f-default-rtdb.firebaseio.com",
+  projectId: "planner-e932f",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const gameRef = db.ref('afterdark/session');
+const licensesRef = db.ref('afterdark/licenses');
+
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// =================================================================
+// STAGE 1 — ACCESS CODE ("subscription" stand-in)
+// To issue a code: in Firebase Console > Realtime Database, add under
+// afterdark/licenses a key like "SUMMER2026" with value true.
+// A real self-serve version would create this key automatically after
+// a Stripe payment via a small Cloud Function — that's the piece to
+// add later; this version checks codes you create by hand.
+// =================================================================
+const licenseStage = document.getElementById('licenseStage');
+const lockStage = document.getElementById('lockStage');
+const setupStage = document.getElementById('setupStage');
+const identityStage = document.getElementById('identityStage');
+const gameStage = document.getElementById('gameStage');
+
+document.getElementById('licenseBtn').addEventListener('click', async ()=>{
+  const code = document.getElementById('licenseInput').value.trim().toUpperCase();
+  const errEl = document.getElementById('licenseError');
+  if (!code){ errEl.textContent = "Enter a code."; return; }
+  errEl.textContent = "Checking…";
+  try {
+    const snap = await licensesRef.child(code).once('value');
+    if (snap.exists() && snap.val() === true){
+      localStorage.setItem('afterdark_license', code);
+      errEl.textContent = "";
+      licenseStage.style.display = 'none';
+      lockStage.style.display = 'block';
+    } else {
+      errEl.textContent = "That code isn't active.";
+    }
+  } catch(e){
+    errEl.textContent = "Couldn't check the code — try again.";
+  }
+});
+
+// Skip straight past the license screen if already activated on this device
+(function checkExistingLicense(){
+  const saved = localStorage.getItem('afterdark_license');
+  if (saved){
+    licenseStage.style.display = 'none';
+    lockStage.style.display = 'block';
+  }
+})();
+
+// =================================================================
+// STAGE 2 — PASSCODE
+// =================================================================
+const PASSCODE_HASH = "deeb8051d22932f57f499495f4697b0cee64aa65201aa0b8c4cd5d6ba603333f"; // "letsplay"
+
+document.getElementById('unlockBtn').addEventListener('click', tryUnlock);
+document.getElementById('passInput').addEventListener('keydown', e=>{ if (e.key==='Enter') tryUnlock(); });
+async function tryUnlock(){
+  const val = document.getElementById('passInput').value.trim().toLowerCase();
+  const hash = await sha256(val);
+  if (hash === PASSCODE_HASH){
+    lockStage.style.display = 'none';
+    enterRoom();
+  } else {
+    document.getElementById('lockError').textContent = "That's not it — try again.";
+  }
+}
+
+// =================================================================
+// GROUP CONTENT — expanded pools, shuffled per level+type so nothing
+// repeats until the whole pool has been used once.
+// =================================================================
+const CONTENT = {
+  starter: {
+    truth: [
+      "What's a talent almost nobody knows you have?",
+      "What's the most embarrassing song on your playlist?",
+      "What's a rule you've broken and don't regret?",
+      "What's the best compliment you've ever received?",
+      "What's a food combo you love that grosses people out?",
+      "What's the most spontaneous thing you've ever done?",
+      "Who in this room would you trust with a secret first?",
+      "What's a habit you're low-key proud of?",
+      "What's the last lie you told, and why?",
+      "What's a fear you've never told anyone in this room?",
+      "What's the weirdest thing you've Googled this month?",
+      "What's a compliment you wish people gave you more?",
+      "What's your most-used emoji and why?",
+      "What's something you're terrible at but still enjoy?",
+      "What's the best gift you've ever given someone?",
+      "Who's the last person you stalked on social media?"
+    ],
+    dare: [
+      "Do your best impression of someone in this room (no names needed).",
+      "Let the group pick your new nickname for the rest of the game.",
+      "Sing the chorus of your most embarrassing favourite song.",
+      "Show the group your camera roll from exactly one year ago today.",
+      "Do 15 seconds of your best dance move, no music.",
+      "Text a random contact 'guess what?' and read their reply out loud.",
+      "Speak in an accent of the group's choosing until your next turn.",
+      "Let someone else post one word on your social media story.",
+      "Attempt to recite the alphabet backwards.",
+      "Give your honest first impression of the person to your left.",
+      "Do your best celebrity impression for 15 seconds.",
+      "Let the group rename one app on your phone.",
+      "Balance something on your head for the next full round.",
+      "Tell a 30-second story where every sentence is a lie.",
+      "Show the group the weirdest photo in your saved images.",
+      "Do an impression of a famous movie villain."
+    ]
+  },
+  naughty: {
+    truth: [
+      "What's a red flag you've ignored in a past relationship?",
+      "What's the boldest thing you've done to get someone's attention?",
+      "What's a flirting move that always works on you?",
+      "Who was your celebrity crush growing up, and is it still them?",
+      "What's the cheesiest pickup line you've actually used?",
+      "What's a compliment that instantly makes you blush?",
+      "What's your idea of a perfect first date?",
+      "What's something you find surprisingly attractive in a person?",
+      "What's the most confident you've ever felt walking into a room?",
+      "What's a 'type' you keep going back to, even when you shouldn't?",
+      "What's the last thing that gave you butterflies?",
+      "What's a compliment you've never said out loud to someone you liked?",
+      "What's your go-to move when you want someone to notice you?",
+      "What's the most memorable text you've ever received?",
+      "What's a small gesture that instantly wins you over?",
+      "Who's the last person you had a crush on and never told?"
+    ],
+    dare: [
+      "Give a genuine, specific compliment to the person on your right.",
+      "Do your most convincing 'flirting in a movie' scene, solo.",
+      "Text your most-used contact a compliment right now, no context.",
+      "Let the group choose a slow song for you to sway to for 20 seconds.",
+      "Whisper a fun fact about yourself to the person next to you.",
+      "Do your best sultry walk across the room and back.",
+      "Give a toast in the most dramatic voice you can manage.",
+      "Strike your best 'main character' pose for a photo.",
+      "Read your last five sent texts out loud, skipping any names.",
+      "Do a 10-second slow-motion hair flip like you're in a shampoo ad.",
+      "Give your best 'love at first sight' reaction to an object in the room.",
+      "Let someone style your hair for the next round, no complaints.",
+      "Practice your best wink on three different people in the room.",
+      "Do your most dramatic entrance, as if walking into a party.",
+      "Give a one-line 'why you should date me' pitch, played for laughs.",
+      "Do an over-the-top dramatic swoon."
+    ]
+  },
+  spicy: {
+    truth: [
+      "What's a fantasy date you've never told anyone about?",
+      "What's the boldest thing you'd do if you knew you wouldn't be judged?",
+      "What's a compliment about your appearance that means the most to you?",
+      "What's the most confident you've ever felt in an outfit?",
+      "What's something on your bucket list you've never said out loud?",
+      "What's a song that instantly puts you in a certain mood?",
+      "What's the most daring thing you've ever worn in public?",
+      "What's a compliment you'd love to hear right now?",
+      "What's your idea of the perfect way to end tonight?",
+      "What's something you'd love to be dared to do but are too shy to suggest?",
+      "What's a risk you took that paid off in a big way?",
+      "What's the most adventurous thing on your bucket list?",
+      "What's a compliment that would make your whole week?",
+      "What's the boldest outfit choice you've ever made?",
+      "What's something spontaneous you wish would happen tonight?",
+      "What's the most confident decision you've made this year?"
+    ],
+    dare: [
+      "Do a 20-second confident solo dance like nobody's watching.",
+      "Strike three different 'magazine cover' poses in a row.",
+      "Give the most dramatic, over-the-top compliment you can to the room.",
+      "Do your best 'runway walk' across the room.",
+      "Pick a song and lip-sync the chorus with full commitment.",
+      "Let the group direct a 10-second 'movie scene' starring you.",
+      "Do your most confident strut in slow motion.",
+      "Deliver your 'Oscars acceptance speech' as if you just won.",
+      "Do a dramatic slow-motion hair toss, three times.",
+      "Give your best 'seductive villain' one-liner.",
+      "Strike a pose and hold it for 15 seconds while the group narrates.",
+      "Do your best impression of walking in heels/on a runway.",
+      "Give a 15-second 'confidence pep talk' to the mirror (or your phone camera).",
+      "Do your most dramatic 'reveal' — as if stepping out in a show-stopping outfit.",
+      "Deliver a line like you're the lead in a romance movie trailer.",
+      "Do a slow, dramatic spin like a scene transition."
+    ]
+  },
+  naughtiest: {
+    truth: [
+      "If tonight had no rules at all, what would you want to happen?",
+      "What's the one thing you've always wanted to be dared to do?",
+      "What's the most daring thing you'd do for a good story to tell later?",
+      "What's a secret ambition you've never said out loud?",
+      "What's the wildest thing you'd do on a dare from this exact group?",
+      "What's the boldest version of yourself you've ever shown someone?",
+      "If you could get away with anything for one night, what would you do?",
+      "What's the last thing that made you feel completely fearless?"
+    ],
+    dare: [
+      "Do the boldest, most confident thing you can think of, solo, right now.",
+      "Give the group a 'this is my villain era' monologue.",
+      "Do your most dramatic red-carpet exit from the room and back.",
+      "Deliver a completely over-the-top, theatrical goodbye speech as if leaving forever.",
+      "Do a full 30-second solo performance — song, dance, or speech, your choice.",
+      "Let the group throw out three words, and freestyle a 20-second story using all three.",
+      "Do your best 'plot twist' reveal about yourself, real or invented, for dramatic effect.",
+      "End your turn with the most dramatic exit line you can come up with."
+    ]
+  }
+};
+
+const LEVEL_LABELS = { starter:"STARTER", naughty:"NAUGHTY", spicy:"SPICY", naughtiest:"NAUGHTIEST" };
+const LEVEL_DESCRIPTIONS = {
+  starter: "Icebreakers — easy, funny, low-stakes.",
+  naughty: "A little bolder, still playful.",
+  spicy: "Confident, dramatic, more daring.",
+  naughtiest: "Full send — no holding back."
+};
+
+function shuffledIndices(n){
+  const arr = Array.from({length:n}, (_,i)=>i);
+  for (let i=arr.length-1; i>0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+
+const DEFAULT_STATE = {
+  players: [],          // ["Jim","Aliana","Sam"]
+  order: [],            // shuffled turn order, indices into players
+  currentIndex: 0,      // pointer into order[]
+  level: null,
+  phase: 'idle',        // idle | revealed
+  type: null,
+  promptText: '',
+  used: {               // shuffle-bag draw order per level+type, plus a cursor
+    starter:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} },
+    naughty:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} },
+    spicy:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} },
+    naughtiest:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} }
+  }
+};
+
+let state = null;
+let myName = localStorage.getItem('afterdark_who') || null;
+
+// =================================================================
+// STAGE 3 — GROUP SETUP (host builds the room; others just join)
+// =================================================================
+let playerCount = 2;
+const countDisplay = document.getElementById('countDisplay');
+const playerInputsEl = document.getElementById('playerInputs');
+
+function renderPlayerInputs(){
+  countDisplay.textContent = playerCount;
+  playerInputsEl.innerHTML = '';
+  for (let i=0;i<playerCount;i++){
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.placeholder = `Player ${i+1} name`;
+    inp.id = `pname${i}`;
+    playerInputsEl.appendChild(inp);
+  }
+}
+document.getElementById('incBtn').addEventListener('click', ()=>{ if (playerCount<10){ playerCount++; renderPlayerInputs(); } });
+document.getElementById('decBtn').addEventListener('click', ()=>{ if (playerCount>2){ playerCount--; renderPlayerInputs(); } });
+renderPlayerInputs();
+
+document.getElementById('startRoomBtn').addEventListener('click', async ()=>{
+  const names = [];
+  for (let i=0;i<playerCount;i++){
+    const v = document.getElementById(`pname${i}`).value.trim();
+    if (!v){ document.getElementById('setupError').textContent = "Fill in every name."; return; }
+    names.push(v);
+  }
+  const order = shuffledIndices(names.length);
+  const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+  fresh.players = names;
+  fresh.order = order;
+  // Keep this device in sync immediately.  Waiting for Firebase's live
+  // listener here left `state` null when the host chose their identity,
+  // so render() had nothing to show and the screen appeared stuck.
+  state = fresh;
+  try {
+    await gameRef.set(fresh);
+  } catch (error) {
+    document.getElementById('setupError').textContent = "Couldn't create the room — check your connection and try again.";
+    return;
+  }
+  setupStage.style.display = 'none';
+  // host still needs to pick which of these players they are
+  showIdentityStage(names);
+});
+
+// =================================================================
+// STAGE 4 — IDENTITY (which player is this device)
+// =================================================================
+function showIdentityStage(players){
+  const grid = document.getElementById('whoGrid');
+  grid.innerHTML = '';
+  players.forEach(name=>{
+    const b = document.createElement('button');
+    b.textContent = `I'm ${name}`;
+    b.addEventListener('click', ()=>{
+      myName = name;
+      localStorage.setItem('afterdark_who', name);
+      identityStage.style.display = 'none';
+      gameStage.style.display = 'block';
+      render();
+    });
+    grid.appendChild(b);
+  });
+  identityStage.style.display = 'block';
+}
+
+document.getElementById('switchWho').addEventListener('click', e=>{
+  e.preventDefault();
+  localStorage.removeItem('afterdark_who');
+  myName = null;
+  gameStage.style.display = 'none';
+  showIdentityStage(state.players);
+});
+
+// =================================================================
+// ENTER ROOM — decide which stage to show after passcode
+// =================================================================
+function enterRoom(){
+  gameRef.once('value').then(snap=>{
+    const data = snap.val();
+    if (!data || !data.players || data.players.length === 0){
+      setupStage.style.display = 'block';
+    } else {
+      state = data;
+      const saved = localStorage.getItem('afterdark_who');
+      if (saved && state.players.includes(saved)){
+        myName = saved;
+        gameStage.style.display = 'block';
+      } else {
+        showIdentityStage(state.players);
+      }
+    }
+  });
+}
+
+// =================================================================
+// GAME LOGIC
+// =================================================================
+const levelsEl = document.getElementById('levels');
+const cardTag = document.getElementById('cardTag');
+const cardPrompt = document.getElementById('cardPrompt');
+const cardHint = document.getElementById('cardHint');
+const choicesEl = document.getElementById('choices');
+const nextBtn = document.getElementById('nextBtn');
+const skipBtn = document.getElementById('skipBtn');
+const turnStrip = document.getElementById('turnStrip');
+const syncStatus = document.getElementById('syncStatus');
+const groupKicker = document.getElementById('groupKicker');
+const levelDesc = document.getElementById('levelDesc');
+
+function currentPlayer(){
+  if (!state || !state.players.length) return null;
+  const idx = state.order[state.currentIndex % state.order.length];
+  return state.players[idx];
+}
+
+function writeState(patch){
+  state = { ...state, ...patch };
+  gameRef.set(state);
+}
+
+function render(){
+  if (!state || !state.players || !state.players.length) return;
+
+  document.getElementById('whoAmI').textContent = myName || '—';
+  groupKicker.textContent = `${state.players.length} PLAYERS`;
+
+  const turn = currentPlayer();
+  turnStrip.innerHTML = '';
+  state.players.forEach(name=>{
+    const chip = document.createElement('span');
+    chip.className = 'turn-chip' + (name === turn ? ' answering' : '');
+    chip.textContent = name === turn ? `${name} (answering)` : name;
+    turnStrip.appendChild(chip);
+  });
+
+  [...levelsEl.children].forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.level === state.level);
+  });
+  levelDesc.textContent = state.level ? LEVEL_DESCRIPTIONS[state.level] : "Pick a level to start.";
+
+  if (state.phase === 'idle'){
+    cardTag.textContent = state.level ? LEVEL_LABELS[state.level] + " — CHOOSE ONE" : "READY WHEN YOU ARE";
+    cardPrompt.textContent = state.level ? `${turn}, pick truth or dare.` : "Pick a level, then choose truth or dare.";
+    cardHint.textContent = "";
+    choicesEl.style.display = state.level ? 'grid' : 'none';
+  } else {
+    cardTag.textContent = `${LEVEL_LABELS[state.level]} · ${state.type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
+    cardPrompt.textContent = state.promptText;
+    cardHint.textContent = "Then pass the turn.";
+    choicesEl.style.display = 'none';
+  }
+}
+
+// Draws from a shuffled "bag" per level+type so nothing repeats until
+// every prompt in that pool has been used once, then it reshuffles.
+function pickPrompt(level, type){
+  const pool = CONTENT[level][type];
+  let bag = state.used[level][type];
+  if (!bag.order.length || bag.cursor >= bag.order.length){
+    bag = { order: shuffledIndices(pool.length), cursor: 0 };
+  }
+  const idx = bag.order[bag.cursor];
+  const newBag = { order: bag.order, cursor: bag.cursor + 1 };
+  const newUsed = { ...state.used, [level]: { ...state.used[level], [type]: newBag } };
+  return { text: pool[idx], newUsed };
+}
+
+levelsEl.addEventListener('click', e=>{
+  const btn = e.target.closest('.level-btn');
+  if (!btn) return;
+  writeState({ level: btn.dataset.level, phase: 'idle', type: null, promptText: '' });
+});
+
+choicesEl.addEventListener('click', e=>{
+  const btn = e.target.closest('.choice');
+  if (!btn || !state.level) return;
+  if (myName !== currentPlayer()){
+    cardHint.textContent = `It's ${currentPlayer()}'s turn to answer.`;
+    return;
+  }
+  const { text, newUsed } = pickPrompt(state.level, btn.dataset.type);
+  writeState({ phase: 'revealed', type: btn.dataset.type, promptText: text, used: newUsed });
+});
+
+nextBtn.addEventListener('click', ()=>{
+  if (myName !== currentPlayer()){
+    cardHint.textContent = `Only ${currentPlayer()} can pass the turn right now.`;
+    return;
+  }
+  writeState({ currentIndex: state.currentIndex + 1, phase: 'idle', type: null, promptText: '' });
+});
+
+skipBtn.addEventListener('click', ()=>{
+  if (myName !== currentPlayer()){
+    cardHint.textContent = `Only ${currentPlayer()} can skip right now.`;
+    return;
+  }
+  writeState({ phase: 'idle', type: null, promptText: '' });
+});
+
+choicesEl.style.display = 'none';
+
+gameRef.on('value', snapshot=>{
+  const data = snapshot.val();
+  if (data && data.players && data.players.length){
+    state = data;
+    syncStatus.textContent = "Synced live with everyone in the room.";
+    if (gameStage.style.display === 'block') render();
+  }
+});
+</script>
+</body>
+</html>
