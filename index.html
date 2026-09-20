@@ -73,6 +73,9 @@
     font-size:12.5px; color:var(--cream-dim); background:#1c0e14;
   }
   .turn-chip.answering{ border-color:var(--ember); color:var(--ember); background:rgba(224,139,95,0.1); }
+  .turn-chip.online::after{ content:" · online"; color:var(--starter); }
+  .turn-chip.waiting::after{ content:" · waiting"; color:var(--cream-dim); }
+  .presence-summary{ text-align:center; color:var(--cream-dim); font-size:12px; margin:-8px 0 16px; }
 
   /* level indicator */
   .level-indicator{ margin-bottom:18px; }
@@ -175,6 +178,7 @@
       You are <strong id="whoAmI" style="color:var(--ember);">—</strong>
       · <a href="#" id="switchWho" class="link">not you?</a>
     </p>
+    <div class="presence-summary" id="presenceSummary">Checking who is here…</div>
 
     <div class="turn-strip" id="turnStrip"></div>
 
@@ -225,6 +229,9 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const gameRef = db.ref('afterdark/session');
 const licensesRef = db.ref('afterdark/licenses');
+// Keep presence separate from the game state: game updates use set(), while
+// presence must remain independent so a turn change never overwrites it.
+const presenceRef = db.ref('afterdark/presence');
 
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
@@ -468,6 +475,16 @@ const DEFAULT_STATE = {
 
 let state = null;
 let myName = localStorage.getItem('afterdark_who') || null;
+let presence = {};
+const deviceId = localStorage.getItem('afterdark_device_id') ||
+  (crypto.randomUUID ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+localStorage.setItem('afterdark_device_id', deviceId);
+
+function setMyPresence(name){
+  const myPresenceRef = presenceRef.child(deviceId);
+  myPresenceRef.onDisconnect().remove();
+  return myPresenceRef.set({ name, connectedAt: firebase.database.ServerValue.TIMESTAMP });
+}
 
 // Sessions live in Firebase between deployments. Older or partially-written
 // sessions may not have every field the current game expects; normalize them
@@ -586,6 +603,7 @@ function showIdentityStage(players){
           return;
         }
       }
+      setMyPresence(name).catch(()=>{});
       identityStage.style.display = 'none';
       gameStage.style.display = 'block';
       render();
@@ -598,6 +616,7 @@ function showIdentityStage(players){
 document.getElementById('switchWho').addEventListener('click', e=>{
   e.preventDefault();
   localStorage.removeItem('afterdark_who');
+  presenceRef.child(deviceId).remove().catch(()=>{});
   myName = null;
   gameStage.style.display = 'none';
   showIdentityStage(state.players);
@@ -616,8 +635,10 @@ function enterRoom(){
       const saved = localStorage.getItem('afterdark_who');
       if (saved && state.players.includes(saved)){
         myName = saved;
+        setMyPresence(myName).catch(()=>{});
         gameStage.style.display = 'block';
       } else {
+        presenceRef.child(deviceId).remove().catch(()=>{});
         showIdentityStage(state.players);
       }
     }
@@ -638,6 +659,7 @@ const turnStrip = document.getElementById('turnStrip');
 const syncStatus = document.getElementById('syncStatus');
 const groupKicker = document.getElementById('groupKicker');
 const levelDesc = document.getElementById('levelDesc');
+const presenceSummary = document.getElementById('presenceSummary');
 
 function currentPlayer(){
   if (!state || !state.players.length) return null;
@@ -657,10 +679,17 @@ function render(){
   groupKicker.textContent = `${state.players.length} PLAYERS`;
 
   const turn = currentPlayer();
+  const onlineNames = new Set(
+    Object.values(presence).map(entry => entry && entry.name).filter(name => state.players.includes(name))
+  );
+  const onlinePlayers = state.players.filter(name => onlineNames.has(name));
+  presenceSummary.textContent = onlinePlayers.length
+    ? `${onlinePlayers.join(' and ')} ${onlinePlayers.length === 1 ? 'is' : 'are'} online now.`
+    : 'No players are online yet.';
   turnStrip.innerHTML = '';
   state.players.forEach(name=>{
     const chip = document.createElement('span');
-    chip.className = 'turn-chip' + (name === turn ? ' answering' : '');
+    chip.className = 'turn-chip' + (name === turn ? ' answering' : '') + (onlineNames.has(name) ? ' online' : ' waiting');
     chip.textContent = name === turn ? `${name} (answering)` : name;
     turnStrip.appendChild(chip);
   });
@@ -739,6 +768,11 @@ gameRef.on('value', snapshot=>{
     syncStatus.textContent = "Synced live with everyone in the room.";
     if (gameStage.style.display === 'block') render();
   }
+});
+
+presenceRef.on('value', snapshot=>{
+  presence = snapshot.val() || {};
+  if (gameStage.style.display === 'block') render();
 });
 </script>
 </body>
