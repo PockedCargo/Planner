@@ -265,13 +265,11 @@ document.getElementById('licenseBtn').addEventListener('click', async ()=>{
   }
 });
 
-// Skip straight past the license screen if already activated on this device
-(function checkExistingLicense(){
-  const saved = localStorage.getItem('afterdark_license');
-  if (saved){
-    licenseStage.style.display = 'none';
-    lockStage.style.display = 'block';
-  }
+// This is a shared game, not a paid-access flow. Go straight to the one
+// room passcode so players do not mistake the old license-code screen for it.
+(function showPasscodeScreen(){
+  licenseStage.style.display = 'none';
+  lockStage.style.display = 'block';
 })();
 
 // =================================================================
