@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
 <title>After Dark — Jim &amp; Aliana</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -302,17 +303,27 @@
 
 <script>
 // --- Passcode gate ---------------------------------------------------
-// Change this to whatever you like. It's a soft privacy screen only,
-// not real security (anyone who views the page source can find it).
-const PASSCODE = "letsplay";
+// The passcode is stored as a SHA-256 hash, not plain text, so anyone
+// glancing at the page source can't just read it off. To set your own
+// passcode: open this file in a browser console and run
+//   crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourword'))
+//     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+// then paste the result below. Default passcode is "letsplay".
+const PASSCODE_HASH = "deeb8051d22932f57f499495f4697b0cee64aa65201aa0b8c4cd5d6ba603333";
+
+async function sha256(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
 
 document.getElementById('unlockBtn').addEventListener('click', tryUnlock);
 document.getElementById('passInput').addEventListener('keydown', (e)=>{
   if (e.key === 'Enter') tryUnlock();
 });
-function tryUnlock(){
+async function tryUnlock(){
   const val = document.getElementById('passInput').value.trim().toLowerCase();
-  if (val === PASSCODE.toLowerCase()){
+  const hash = await sha256(val);
+  if (hash === PASSCODE_HASH){
     document.getElementById('lockStage').style.display = 'none';
     document.getElementById('gameStage').style.display = 'block';
   } else {
