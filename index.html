@@ -328,7 +328,7 @@
 //   crypto.subtle.digest('SHA-256', new TextEncoder().encode('yourword'))
 //     .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
 // then paste the result below. Default passcode is "letsplay".
-const PASSCODE_HASH = "deeb8051d22932f57f499495f4697b0cee64aa65201aa0b8c4cd5d6ba603333";
+const PASSCODE_HASH = "deeb8051d22932f57f499495f4697b0cee64aa65201aa0b8c4cd5d6ba603333f";
 
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
