@@ -83,6 +83,25 @@ input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius
 .controls{display:flex;gap:10px}
 .footer-note{text-align:center;font-size:11.5px;color:var(--cream-dim);margin-top:16px;opacity:.65}
 .link{color:var(--cream-dim);cursor:pointer}
+.feed{margin-top:18px;border-top:1px solid var(--card-edge);padding-top:12px}
+.feed-title{font-size:11px;letter-spacing:.05em;color:var(--ember);margin-bottom:8px}
+.feed-item{font-size:12.5px;color:var(--cream-dim);padding:6px 0;border-bottom:1px solid rgba(74,34,49,.5);line-height:1.4}
+.feed-item:first-child{color:var(--cream)}
+.feed-item small{opacity:.55;margin-right:6px}
+.modes{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.mode-chip{padding:12px 14px;border-radius:12px;border:1px solid var(--card-edge);background:#1c0e14;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:19px;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.mode-chip small{font-family:'Manrope',sans-serif;font-size:11px;color:var(--cream-dim)}
+.mode-chip.active{border-color:var(--ember);background:rgba(224,139,95,.1)}
+.consent{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--cream-dim);margin:0 0 14px;line-height:1.4}
+.consent input{margin-top:2px}
+.toast{position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:20;background:var(--ember);color:#22110a;font-size:13px;font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 10px 26px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.show{opacity:1}
+.pop{animation:pop .55s ease}
+@keyframes pop{0%{transform:scale(.93);opacity:.3;box-shadow:0 0 0 0 rgba(224,139,95,.7)}60%{box-shadow:0 0 0 14px rgba(224,139,95,0)}100%{transform:scale(1);opacity:1}}
+.history{margin-top:18px;border-top:1px solid var(--card-edge);padding-top:12px}
+.history .htitle{font-size:11px;letter-spacing:.05em;color:var(--ember);margin-bottom:8px;text-align:center}
+.history .hitem{font-size:12.5px;color:var(--cream-dim);margin-bottom:7px;line-height:1.4}
+.history .hitem b{color:var(--cream)}
 </style>
 </head>
 <body>
@@ -134,6 +153,14 @@ input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius
 <div class="stage" id="setupStage" style="max-width:400px;display:none;">
   <div class="brand"><div class="kicker">HOST SETUP</div><h1>Who's <em>Playing</em></h1></div>
   <div class="panel">
+    <p class="note">Choose a game type</p>
+    <div class="modes">
+      <button class="mode-chip" data-mode="intimate">Intimate <small>naughtiest, any size</small></button>
+      <button class="mode-chip" data-mode="friends">Friends <small>any group size</small></button>
+      <button class="mode-chip" data-mode="corporate">Corporate <small>work-safe</small></button>
+    </div>
+    <p class="note" id="modeDesc" style="font-size:12px;margin-top:-4px;"></p>
+    <label class="consent" id="consentWrap"><input type="checkbox" id="consentBox"> <span>Everyone playing is 18+ and happy to play. Anyone can skip anything, anytime.</span></label>
     <p class="note">How many players? You're Player 1.</p>
     <div class="stepper"><button id="decBtn">−</button><div class="count" id="countDisplay">2</div><button id="incBtn">+</button></div>
     <div class="player-inputs" id="playerInputs"></div>
@@ -148,6 +175,7 @@ input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius
   <div class="brand"><div class="kicker">ONE MORE THING</div><h1>Which One's <em>You</em></h1></div>
   <div class="panel">
     <p class="note">Remembered on this device. Names already in use are greyed out.</p>
+    <p class="note" id="identityNote" style="font-size:12px;"></p>
     <div class="who-grid" id="whoGrid"></div>
     <p class="error" id="identityError"></p>
     <p class="footer-note"><a class="link" data-home>← Back</a></p>
@@ -156,7 +184,7 @@ input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius
 
 <!-- STAGE 6: The game -->
 <div class="stage" id="gameStage" style="display:none;">
-  <div class="brand"><div class="kicker" id="groupKicker">GAME NIGHT</div><h1>After <em>Dark</em></h1></div>
+  <div class="brand"><div class="kicker" id="groupKicker">GAME NIGHT</div><h1 id="gameTitle">After <em>Dark</em></h1></div>
   <div class="panel">
     <p class="note" style="font-size:12px;">
       You are <strong id="whoAmI" style="color:var(--ember);">—</strong>
@@ -195,12 +223,17 @@ input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius
       <button class="btn next" id="nextBtn" style="flex:2;">Pass the turn →</button>
     </div>
 
-    <div class="footer-note">Play at your own pace. Anyone can call it whenever.</div>
+    <div class="history" id="history" style="display:none;"></div>
+
+    <div class="feed"><div class="feed-title">LIVE GAME FEED</div><div id="feed"></div></div>
+
+    <div class="footer-note" id="footNote">Play at your own pace. Anyone can call it whenever.</div>
     <div class="footer-note" id="syncStatus">Connecting…</div>
     <div class="footer-note" id="endWrap" style="display:none;"><a class="link" id="endBtn">End group for everyone</a></div>
   </div>
 </div>
 
+<div class="toast" id="toast"></div>
 <button class="btn chat-toggle" id="chatToggle" aria-expanded="false">Chat</button>
 <aside class="panel chat-panel" id="chatPanel" aria-label="Group chat">
   <div class="chat-head"><strong>Group chat</strong><button class="chat-close" id="chatClose" aria-label="Close chat">×</button></div>
@@ -272,7 +305,7 @@ async function tryUnlock(){
 // =================================================================
 // CONTENT
 // =================================================================
-const CONTENT = {
+const BASE = {
   starter: {
     truth: [
       "What's a talent almost nobody knows you have?",
@@ -418,6 +451,235 @@ const LEVEL_DESCRIPTIONS = {
   naughtiest: "Full send — no holding back."
 };
 
+// =================================================================
+// MODES — chosen by the host when the group is created.
+//  intimate : any size, flirty-to-uncensored (adults only)
+//  friends  : group-friendly, with naughty bits (adults only)
+//  corporate: clean, workplace-safe
+// Groups made before modes existed play as "friends".
+// =================================================================
+const LEVELS = ['starter','naughty','spicy','naughtiest'];
+const MODES = {
+  intimate: {
+    name:'Intimate', title:'After <em>Dark</em>', adult:true,
+    blurb:'Any group size. Flirty, sensual and fully uncensored in tone. Adults only, consent first.',
+    names:{starter:'Starter',naughty:'Naughty',spicy:'Spicy',naughtiest:'Naughtiest'},
+    subs:{starter:'flirty warm-up',naughty:'getting bolder',spicy:'heating up',naughtiest:'no holding back'},
+    desc:{starter:'Flirty icebreakers.',naughty:'Teasing and playful.',spicy:'Sensual and daring.',naughtiest:'Uncensored, intimate, no limits — consent first.'},
+    foot:'Adults only. Anyone can skip anything, anytime — no explanations needed.',
+    content:{
+      starter:{
+        truth:[
+          "What's the first thing you noticed about someone in this room?",
+          "What's the best date you've ever been on?",
+          "What's a small thing someone here does that you find quietly attractive?",
+          "Describe your perfect lazy evening in three words.",
+          "What song makes you feel your most confident?",
+          "What's the best compliment you've ever received about your looks?"
+        ],
+        dare:[
+          "Give someone here a genuine compliment, with eye contact.",
+          "Hold hands with someone here for the next two rounds.",
+          "Slow-dance with someone here for 30 seconds.",
+          "Give each person in the room your best flirty wink.",
+          "Describe someone here using only movie titles.",
+          "Whisper the sweetest thing you can think of to someone here."
+        ]
+      },
+      naughty:{
+        truth:[
+          "What could someone here do that would make you blush instantly?",
+          "What's your most flirtatious habit?",
+          "Where's your favourite place to be kissed? (Keep it PG-13.)",
+          "What's the most romantic thing you've always wanted to do but never have?",
+          "What outfit makes you feel most attractive?",
+          "When did you last get butterflies, and for whom?"
+        ],
+        dare:[
+          "Give someone here a 30-second shoulder massage.",
+          "Kiss someone's hand like a Victorian suitor.",
+          "Whisper a flirty line into someone's ear.",
+          "Let someone here pick a song, and sway to it with them.",
+          "Hold a smouldering look at someone for 10 seconds without laughing.",
+          "Offer someone a sip of your drink while holding eye contact."
+        ]
+      },
+      spicy:{
+        truth:[
+          "What's the most attractive thing someone can do with their voice?",
+          "What fantasy date would you plan for someone here?",
+          "What's your biggest turn-on that has nothing to do with looks?",
+          "What's the boldest flirt you've ever pulled off?",
+          "What's something you'd love someone to do for you tonight?",
+          "Pick someone here: what do you find most attractive about them?"
+        ],
+        dare:[
+          "Kiss someone here on the cheek, slowly.",
+          "Trace a heart on someone's palm with your finger.",
+          "Give someone here a slow 20-second neck-and-shoulder massage.",
+          "Sit shoulder to shoulder with someone here for the next round.",
+          "Tell someone your perfect date-night order in your sexiest voice.",
+          "Give someone here a long, lingering hug and tell them what you like about them."
+        ]
+      },
+      naughtiest:{
+        truth:[
+          "What's the sexiest thing anyone has ever whispered to you?",
+          "What's the most daring place you've ever kissed or been kissed?",
+          "What's a fantasy you've never said out loud to anyone here?",
+          "Where do you most love being touched?",
+          "What's your biggest turn-on, in detail?",
+          "If tonight had no limits, what would you want to happen — and with whom here?",
+          "What's the boldest thing you've done in the bedroom that you'd happily do again?",
+          "What's the most unforgettable night of your life, and what made it so?"
+        ],
+        dare:[
+          "Kiss someone here for ten seconds — they choose where, and 'no' is always fine.",
+          "Give someone here a slow, sensual one-minute massage.",
+          "Whisper your boldest fantasy into someone's ear.",
+          "Take off one piece of clothing of your choice (not underwear).",
+          "Let someone blindfold you and feed you something sweet.",
+          "Sit on someone's lap for the next round, if they say yes.",
+          "Trace a finger slowly along someone's arm and neck while holding eye contact for 15 seconds.",
+          "Kiss someone's neck for five seconds, with their yes."
+        ]
+      }
+    }
+  },
+  friends: {
+    name:'Friends', title:'After <em>Dark</em>', adult:true,
+    blurb:'Any group size. Playful and flirty with a few naughty bits. Adults only.',
+    names:{starter:'Starter',naughty:'Naughty',spicy:'Spicy',naughtiest:'Naughtiest'},
+    subs:{starter:'warm up',naughty:'a little bold',spicy:'heats up',naughtiest:'no holding back'},
+    desc:{starter:'Icebreakers — easy, funny, low-stakes.',naughty:'A little bolder, still playful.',spicy:'Daring and flirty, group-friendly.',naughtiest:'Wild stories and bold dares.'},
+    foot:'Adults only. Anyone can skip anything, anytime.',
+    content:{
+      starter:BASE.starter,
+      naughty:BASE.naughty,
+      spicy:{
+        truth:[
+          "Who in this room would be the best kisser, and why?",
+          "What's the most embarrassing thing that's happened to you on a date?",
+          "What's your most scandalous 'I can't believe I did that' story? (PG-13)",
+          "What's the worst pickup attempt you've ever seen?",
+          "Who here has the most flirty energy?",
+          "What's your most unhinged situationship story, short version?"
+        ],
+        dare:[
+          "Read the flirtiest message in your phone out loud, names hidden.",
+          "Read a random text message in your most seductive voice.",
+          "Give a dramatic romantic confession to a pillow.",
+          "Let the group pick a contact — text them 'thinking of you' and read the reply.",
+          "Do a slow-motion runway walk and smoulder for 15 seconds.",
+          "Let the group vote who you'd most likely marry in Vegas from this room, then justify it."
+        ]
+      },
+      naughtiest:{
+        truth:[
+          "What's the most scandalous thing you've done at a party?",
+          "What's the wildest dare you've ever accepted?",
+          "Which celebrity would you pick for a fantasy dinner date, and what would you wear?",
+          "What's the most daring thing you've done to impress someone?",
+          "What's your most flirtatious text ever, and how did it land?",
+          "What's the best kiss you've ever had, and where was it?"
+        ],
+        dare:[
+          "Whisper something outrageous to the person on your left — they decide whether to share it.",
+          "Record a sultry voice message for your crush (don't send it).",
+          "Kiss the hand or cheek of whoever the group picks — with their OK.",
+          "Give someone the group picks a 15-second shoulder rub, consent first.",
+          "Do your most seductive dance for 20 seconds, group picks the song.",
+          "Take a silly cheek-to-cheek selfie with whoever the group picks."
+        ]
+      }
+    }
+  },
+  corporate: {
+    name:'Corporate', title:'Team <em>Game</em>', adult:false,
+    blurb:'Clean and workplace-safe. Icebreakers and team-building.',
+    names:{starter:'Warm-up',naughty:'Team',spicy:'Stretch',naughtiest:'Bold'},
+    subs:{starter:'easy intros',naughty:'know each other',spicy:'go deeper',naughtiest:'big picture'},
+    desc:{starter:'Easy, friendly icebreakers.',naughty:'Teamwork and appreciation.',spicy:'Reflection and growth.',naughtiest:'Vision, leadership and big ideas.'},
+    foot:'Work-friendly. Pass on anything you would rather not answer.',
+    content:{
+      starter:{
+        truth:[
+          "What's your go-to productivity trick?",
+          "What's a skill you'd love to learn this year?",
+          "What was your very first job?",
+          "What's the best advice you've ever received at work?",
+          "What's your favourite way to unwind after a long week?",
+          "What's a tool or app you can't work without?"
+        ],
+        dare:[
+          "Introduce yourself using only three emojis and let the group guess.",
+          "Give a 20-second pitch for your favourite lunch spot.",
+          "Describe your job as a movie trailer.",
+          "Share a fun fact the team doesn't know about you.",
+          "Do your best 'conference call' impression for 15 seconds.",
+          "Teach the group a 10-second skill."
+        ]
+      },
+      naughty:{
+        truth:[
+          "What's one thing a teammate did that made your week?",
+          "What's a project you're proudest of, and why?",
+          "What's one thing you'd change about how meetings run?",
+          "What's something you wish more people knew about your role?",
+          "Who has taught you the most at work, and what?",
+          "What's a risk at work that paid off?"
+        ],
+        dare:[
+          "Give a specific, genuine thank-you to someone in this room.",
+          "Say one thing you admire about the person on your right.",
+          "Share your most useful keyboard shortcut or hack.",
+          "Pitch a ridiculous but harmless new office perk in 20 seconds.",
+          "Mime your typical Monday morning for the group to guess.",
+          "Give a 15-second elevator pitch for the team."
+        ]
+      },
+      spicy:{
+        truth:[
+          "What's a goal you haven't shared with the team yet?",
+          "What's a mistake that taught you something valuable?",
+          "What's one piece of feedback that changed how you work?",
+          "What would you do with a free week to work on anything?",
+          "What's something outside your comfort zone you want to try at work?",
+          "What's the hardest decision you've made in your career?"
+        ],
+        dare:[
+          "Give a one-minute talk on a topic the group chooses.",
+          "Summarise the team's mission in exactly ten words.",
+          "Tell a short story about a work fail — and the lesson.",
+          "Role-play pitching an idea to a sceptical executive.",
+          "Ask someone here a work-appropriate question you've always wondered about.",
+          "Lead the group in a 20-second stretch."
+        ]
+      },
+      naughtiest:{
+        truth:[
+          "Where do you see yourself in five years?",
+          "What would you do with an unlimited budget at work?",
+          "What does great leadership look like to you?",
+          "What's one thing we should stop doing as a team?",
+          "What legacy do you want to leave behind in your career?",
+          "What would you tell your first-day self?"
+        ],
+        dare:[
+          "Deliver a 30-second motivational speech to the team.",
+          "Give honest, kind feedback to someone who asks for it.",
+          "Propose one concrete improvement for next quarter.",
+          "Give a 30-second 'keynote' on a random word the group picks.",
+          "Name three strengths of the person to your left.",
+          "Commit out loud to one thing you'll do better this month."
+        ]
+      }
+    }
+  }
+};
+Object.values(MODES).forEach(m => m.labels = Object.fromEntries(Object.entries(m.names).map(([k,v]) => [k, v.toUpperCase()])));
+const lvl = () => MODES[state?.mode] || MODES.friends;
+
 function shuffledIndices(n){
   const arr = Array.from({length:n}, (_,i)=>i);
   for (let i=arr.length-1; i>0; i--){
@@ -444,7 +706,7 @@ function normalizeState(data){
     && new Set(data.order).size === players.length
     && data.order.every(i => Number.isInteger(i) && i >= 0 && i < players.length);
   const used = {};
-  Object.keys(CONTENT).forEach(level => {
+  LEVELS.forEach(level => {
     used[level] = {};
     ['truth','dare'].forEach(type => {
       const bag = data?.used?.[level]?.[type];
@@ -452,10 +714,10 @@ function normalizeState(data){
         ? { order: bag.order, cursor: Math.max(0, bag.cursor) } : fallback.used[level][type];
     });
   });
-  const level = Object.hasOwn(CONTENT, data?.level) ? data.level : null;
+  const level = LEVELS.includes(data?.level) ? data.level : null;
   const createdAt = Number.isFinite(data?.createdAt) ? data.createdAt : 0;
   return {
-    ...fallback, ...data, players,
+    ...fallback, ...data, players, mode: MODES[data?.mode] ? data.mode : 'friends',
     order: validOrder ? data.order : players.map((_,i)=>i),
     currentIndex: Number.isInteger(data?.currentIndex) && data.currentIndex >= 0 ? data.currentIndex : 0,
     level,
@@ -473,7 +735,7 @@ function normalizeState(data){
 // =================================================================
 let state = null, myName = null, groupCode = null, inGame = false;
 let groupRef, presenceRef, messagesRef, typingRef;
-let presence = {}, typing = {}, typingTimer = null, listeners = [];
+let presence = {}, typing = {}, typingTimer = null, listeners = [], lastPrompt = null, presenceReady = false, toastTimer = null;
 
 function refsFor(code){
   groupCode = code;
@@ -516,7 +778,7 @@ function leaveGroup(msg){
   clearMyTyping();
   localStorage.removeItem(K_MEMBER);
   state = null; myName = null; presence = {}; typing = {};
-  $('chatMessages').innerHTML = '';
+  $('chatMessages').innerHTML = ''; $('feed').innerHTML = '';
   showHome(msg);
 }
 function expireGroup(){
@@ -582,17 +844,28 @@ async function joinByCode(){
 let playerCount = 2;
 function renderPlayerInputs(){
   $('countDisplay').textContent = playerCount;
-  const box = $('playerInputs'); box.innerHTML = '';
+  const box = $('playerInputs'); const old = [...box.querySelectorAll('input')].map(i => i.value); box.innerHTML = '';
   for (let i=0;i<playerCount;i++){
     const inp = document.createElement('input');
     inp.type = 'text'; inp.id = `pname${i}`; inp.maxLength = 20;
-    inp.placeholder = i===0 ? 'Your name (host)' : `Player ${i+1} name`;
+    inp.placeholder = i===0 ? 'Your name (host)' : `Player ${i+1} name`; inp.value = old[i] || '';
     box.appendChild(inp);
   }
 }
-$('incBtn').addEventListener('click', ()=>{ if (playerCount<10){ playerCount++; renderPlayerInputs(); } });
+$('incBtn').addEventListener('click', ()=>{ if (playerCount<maxPlayers()){ playerCount++; renderPlayerInputs(); } });
 $('decBtn').addEventListener('click', ()=>{ if (playerCount>2){ playerCount--; renderPlayerInputs(); } });
-renderPlayerInputs();
+let setupMode = 'friends';
+const maxPlayers = () => 10;   // every mode: 2–10 players
+function setMode(m){
+  setupMode = m;
+  document.querySelectorAll('.mode-chip').forEach(c => c.classList.toggle('active', c.dataset.mode === m));
+  if (playerCount > maxPlayers()) playerCount = maxPlayers();
+  $('consentWrap').style.display = MODES[m].adult ? 'flex' : 'none';
+  $('modeDesc').textContent = MODES[m].blurb;
+  renderPlayerInputs();
+}
+document.querySelectorAll('.mode-chip').forEach(c => c.addEventListener('click', () => setMode(c.dataset.mode)));
+setMode('friends');
 
 $('startRoomBtn').addEventListener('click', async ()=>{
   const err = $('setupError'); const names = [];
@@ -602,6 +875,7 @@ $('startRoomBtn').addEventListener('click', async ()=>{
     names.push(v);
   }
   if (new Set(names.map(n => n.toLowerCase())).size !== names.length){ err.textContent = "Each name must be different."; return; }
+  if (MODES[setupMode].adult && !$('consentBox').checked){ err.textContent = "Please confirm everyone is 18+ and happy to play."; return; }
   err.textContent = "Creating…";
   try {
     let code = null;
@@ -616,6 +890,7 @@ $('startRoomBtn').addEventListener('click', async ()=>{
     fresh.createdAt = now();
     fresh.expiresAt = now() + DAY;
     fresh.adminDevice = deviceId;
+    fresh.mode = setupMode;
     await db.ref(GROUPS + code).set(fresh);
     refsFor(code);
     state = normalizeState(fresh);
@@ -634,6 +909,8 @@ async function showIdentity(code, st){
   if (inGame){ inGame = false; if (presenceRef) presenceRef.child(deviceId).remove().catch(()=>{}); clearMyTyping(); }
   refsFor(code); state = st;
   const grid = $('whoGrid'); grid.innerHTML = '';
+  $('identityNote').textContent = (MODES[st.mode] || MODES.friends).adult
+    ? '18+ group — by joining you confirm you are an adult and happy to play. You can skip anything.' : '';
   $('identityError').textContent = '';
   let taken = new Set();
   try {
@@ -670,10 +947,12 @@ async function enterRoom(){
 function enterGame(){
   detach();
   inGame = true;
+  lastPrompt = null;
   startListeners();
   const mine = presenceRef.child(deviceId);
   mine.onDisconnect().remove();
   mine.set({ name: myName, connectedAt: firebase.database.ServerValue.TIMESTAMP }).catch(()=>{});
+  logEvent(`${myName} joined the game`);
   show('gameStage');
   render();
 }
@@ -687,7 +966,21 @@ function startListeners(){
     $('syncStatus').textContent = "Synced live with everyone in your group.";
     if (inGame) render();
   }, () => { if (inGame) expireGroup(); });
-  listen(presenceRef, snap => { presence = snap.val() || {}; if (inGame) render(); });
+  presenceReady = false;
+  listen(presenceRef, snap => {
+    const prev = (inGame && state) ? onlineSet() : new Set();
+    presence = snap.val() || {};
+    if (inGame && state){
+      if (presenceReady){
+        const cur = onlineSet();
+        cur.forEach(n => { if (!prev.has(n) && n !== myName) toast(`${n} came online`); });
+        prev.forEach(n => { if (!cur.has(n)) toast(`${n} went offline`); });
+      }
+      presenceReady = true;
+      render();
+    }
+  });
+  listen(groupRef.child('log').limitToLast(30), snap => renderFeed(snap.val()));
   listen(messagesRef.limitToLast(100), snap => renderMessages(snap.val()));
   listen(typingRef, snap => { typing = snap.val() || {}; renderTyping(); setTimeout(renderTyping, 3600); });
 }
@@ -712,7 +1005,11 @@ function writeState(patch){
 function render(){
   if (!state || !state.players.length) return;
   $('whoAmI').textContent = myName || '—';
-  $('groupKicker').textContent = `${state.players.length} PLAYERS`;
+  const M = lvl();
+  $('groupKicker').textContent = `${state.players.length} PLAYERS · ${M.name.toUpperCase()}`;
+  $('gameTitle').innerHTML = M.title;
+  $('footNote').textContent = M.foot;
+  [...$('levels').children].forEach(b => { const k = b.dataset.level; b.innerHTML = `${M.names[k]}<small>${M.subs[k]}</small>`; });
   $('inviteCode').textContent = groupCode;
   const left = Math.max(0, state.expiresAt - now());
   $('expiryLeft').textContent = `resets in ${Math.floor(left/3600000)}h ${Math.floor(left%3600000/60000)}m`;
@@ -720,9 +1017,12 @@ function render(){
 
   const turn = currentPlayer();
   const online = onlineSet();
-  const here = state.players.filter(n => online.has(n));
-  $('presenceSummary').textContent = here.length
-    ? `${here.join(' and ')} ${here.length===1?'is':'are'} online now.` : 'No players are online yet.';
+  const total = state.players.length;
+  const waiting = state.players.filter(n => !online.has(n));
+  $('presenceSummary').textContent = waiting.length === 0
+    ? `Everyone's here — ${total} of ${total} online`
+    : `${online.size} of ${total} online · waiting for ${waiting.join(', ')}`;
+  $('presenceSummary').style.color = waiting.length === 0 ? 'var(--starter)' : '';
   const strip = $('turnStrip'); strip.innerHTML = '';
   state.players.forEach(name => {
     const chip = document.createElement('span');
@@ -732,23 +1032,24 @@ function render(){
   });
 
   [...$('levels').children].forEach(b => b.classList.toggle('active', b.dataset.level === state.level));
-  $('levelDesc').textContent = state.level ? LEVEL_DESCRIPTIONS[state.level] : "Pick a level to start.";
+  $('levelDesc').textContent = state.level ? lvl().desc[state.level] : "Pick a level to start.";
 
   if (state.phase === 'idle'){
-    $('cardTag').textContent = state.level ? LEVEL_LABELS[state.level] + " — CHOOSE ONE" : "READY WHEN YOU ARE";
+    $('cardTag').textContent = state.level ? lvl().labels[state.level] + " — CHOOSE ONE" : "READY WHEN YOU ARE";
     $('cardPrompt').textContent = state.level ? `${turn}, pick truth or dare.` : "Pick a level, then choose truth or dare.";
-    $('cardHint').textContent = "";
-    $('choices').style.display = state.level ? 'grid' : 'none';
+    const mine = canAct();
+    $('cardHint').textContent = state.level && !mine ? `Waiting for ${turn} to choose…` : "";
+    $('choices').style.display = state.level && mine ? 'grid' : 'none';
   } else {
-    $('cardTag').textContent = `${LEVEL_LABELS[state.level]} · ${state.type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
+    $('cardTag').textContent = `${lvl().labels[state.level]} · ${state.type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
     $('cardPrompt').textContent = state.promptText;
-    $('cardHint').textContent = "Then pass the turn.";
+    $('cardHint').textContent = canAct() ? "Then pass the turn." : `${turn} is answering — watch the card.`;
     $('choices').style.display = 'none';
   }
 }
 
 function pickPrompt(level, type){
-  const pool = CONTENT[level][type];
+  const pool = lvl().content[level][type];
   let bag = state.used[level][type];
   if (!bag.order.length || bag.cursor >= bag.order.length) bag = { order: shuffledIndices(pool.length), cursor: 0 };
   const idx = bag.order[bag.cursor];
@@ -759,6 +1060,7 @@ function pickPrompt(level, type){
 $('levels').addEventListener('click', e => {
   const btn = e.target.closest('.level-btn'); if (!btn) return;
   writeState({ level: btn.dataset.level, phase: 'idle', type: null, promptText: '' });
+  logEvent(`${myName} set the level to ${lvl().labels[btn.dataset.level]}`);
 });
 $('choices').addEventListener('click', e => {
   const btn = e.target.closest('.choice');
@@ -766,15 +1068,40 @@ $('choices').addEventListener('click', e => {
   if (!canAct()){ $('cardHint').textContent = `It's ${currentPlayer()}'s turn to answer.`; return; }
   const { text, newUsed } = pickPrompt(state.level, btn.dataset.type);
   writeState({ phase: 'revealed', type: btn.dataset.type, promptText: text, used: newUsed });
+  logEvent(`${currentPlayer()} chose ${btn.dataset.type.toUpperCase()}: ${text}`);
 });
 $('nextBtn').addEventListener('click', () => {
   if (!canAct()){ $('cardHint').textContent = `Only ${currentPlayer()} can pass the turn right now.`; return; }
+  const who = currentPlayer();
   writeState({ currentIndex: state.currentIndex + 1, phase: 'idle', type: null, promptText: '' });
+  logEvent(`${who} passed the turn — now it's ${currentPlayer()}'s turn`);
 });
 $('skipBtn').addEventListener('click', () => {
   if (!canAct()){ $('cardHint').textContent = `Only ${currentPlayer()} can skip right now.`; return; }
   writeState({ phase: 'idle', type: null, promptText: '' });
+  logEvent(`${currentPlayer()} skipped`);
 });
+
+// Shared activity feed + toasts (stored under the group, so they expire with it)
+function logEvent(text){
+  if (groupRef) groupRef.child('log').push({ text, at: firebase.database.ServerValue.TIMESTAMP }).catch(()=>{});
+}
+function toast(text){
+  const t = $('toast'); t.textContent = text; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+function renderFeed(log){
+  const box = $('feed'); box.innerHTML = '';
+  const items = Object.values(log || {}).filter(x => x && typeof x.text === 'string').reverse().slice(0, 12);
+  if (!items.length){ box.innerHTML = '<div class="feed-item">Nothing yet — pick a level to start.</div>'; return; }
+  items.forEach(x => {
+    const row = document.createElement('div'); row.className = 'feed-item';
+    const time = document.createElement('small');
+    time.textContent = x.at ? new Date(x.at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+    row.append(time, document.createTextNode(x.text));
+    box.appendChild(row);
+  });
+}
 $('inviteCode').addEventListener('click', () => {
   if (navigator.clipboard) navigator.clipboard.writeText(groupCode).then(() => { $('inviteCode').textContent = 'COPIED'; setTimeout(render, 1200); }).catch(()=>{});
 });
