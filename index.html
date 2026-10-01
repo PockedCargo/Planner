@@ -11,188 +11,160 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
-  :root{
-    --bg: #180d13;
-    --card: #2c1420;
-    --card-edge: #4a2231;
-    --ember: #e08b5f;
-    --ember-dim: #a9633f;
-    --rose: #d65b7a;
-    --cream: #f4e9e2;
-    --cream-dim: #c9b6ae;
-    --starter: #7fa88f;
-    --naughty: #d69a4e;
-    --spicy: #d65b3a;
-    --naughtiest: #c22f4a;
-  }
-  *{box-sizing:border-box;}
-  html,body{height:100%;}
-  body{
-    margin:0; min-height:100vh;
-    background:
-      radial-gradient(ellipse 900px 500px at 15% -10%, #3a1a26 0%, transparent 60%),
-      radial-gradient(ellipse 700px 500px at 100% 10%, #2c1e13 0%, transparent 55%),
-      var(--bg);
-    color:var(--cream); font-family:'Manrope', sans-serif;
-    display:flex; align-items:center; justify-content:center; padding:32px 16px;
-  }
-  .stage{ width:100%; max-width:520px; }
-  .brand{ text-align:center; margin-bottom:22px; }
-  .brand .kicker{ font-size:13px; color:var(--ember); letter-spacing:0.04em; }
-  .brand h1{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:44px; margin:2px 0 0; line-height:1; }
-  .brand h1 em{ font-style:italic; color:var(--rose); }
-  .panel{
-    background:linear-gradient(180deg, var(--card) 0%, #23101a 100%);
-    border:1px solid var(--card-edge); border-radius:20px;
-    padding:26px 24px 22px; box-shadow:0 30px 60px -25px rgba(0,0,0,0.7);
-  }
-  p.note{ text-align:center; color:var(--cream-dim); font-size:14px; margin-top:0; }
-  input[type=text], input[type=password]{
-    width:100%; padding:13px 14px; border-radius:12px; border:1px solid var(--card-edge);
-    background:#1c0e14; color:var(--cream); font-family:'Manrope',sans-serif; font-size:15px; margin-bottom:10px;
-  }
-  .btn{ padding:12px 10px; border-radius:12px; border:none; font-family:'Manrope', sans-serif; font-weight:600; font-size:13.5px; cursor:pointer; }
-  .btn.full{ width:100%; }
-  .btn.next{ background:var(--ember); color:#22110a; }
-  .btn.skip{ background:transparent; border:1px solid var(--card-edge); color:var(--cream-dim); }
-  .error{ text-align:center; color:var(--rose); font-size:12.5px; min-height:16px; margin:8px 0 0; }
-  .player-inputs{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
-  .stepper{ display:flex; align-items:center; justify-content:center; gap:16px; margin-bottom:16px; }
-  .stepper button{ width:38px; height:38px; border-radius:50%; border:1px solid var(--card-edge); background:#1c0e14; color:var(--cream); font-size:18px; cursor:pointer; }
-  .stepper .count{ font-family:'Cormorant Garamond', serif; font-size:30px; min-width:40px; text-align:center; }
-  .who-grid{ display:flex; flex-wrap:wrap; gap:10px; }
-  .who-grid button{
-    flex:1 1 40%; padding:14px 8px; border-radius:14px; border:1px solid var(--card-edge);
-    background:#1c0e14; color:var(--cream); font-family:'Cormorant Garamond', serif; font-size:19px; cursor:pointer;
-  }
-
-  /* group turn strip */
-  .turn-strip{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-bottom:18px; }
-  .turn-chip{
-    padding:6px 12px; border-radius:999px; border:1px solid var(--card-edge);
-    font-size:12.5px; color:var(--cream-dim); background:#1c0e14;
-  }
-  .turn-chip.answering{ border-color:var(--ember); color:var(--ember); background:rgba(224,139,95,0.1); }
-  .turn-chip.online::after{ content:" · online"; color:var(--starter); }
-  .turn-chip.waiting::after{ content:" · waiting"; color:var(--cream-dim); }
-  .presence-summary{ text-align:center; color:var(--cream-dim); font-size:12px; margin:-8px 0 16px; }
-  .chat-toggle{ position:fixed; right:18px; bottom:18px; z-index:10; background:var(--ember); color:#22110a; box-shadow:0 10px 26px rgba(0,0,0,.35); }
-  .chat-panel{ position:fixed; right:18px; bottom:72px; z-index:10; width:min(360px,calc(100vw - 32px)); height:min(460px,calc(100vh - 110px)); display:none; flex-direction:column; overflow:hidden; padding:0; }
-  .chat-panel.open{ display:flex; }
-  .chat-head{ display:flex; justify-content:space-between; align-items:center; padding:14px 16px; border-bottom:1px solid var(--card-edge); }
-  .chat-head strong{ font-family:'Cormorant Garamond',serif; font-size:23px; }
-  .chat-close{ background:transparent; border:0; color:var(--cream-dim); font-size:22px; cursor:pointer; }
-  .chat-messages{ flex:1; overflow:auto; padding:12px 14px; display:flex; flex-direction:column; gap:10px; }
-  .chat-message{ align-self:flex-start; max-width:88%; padding:9px 11px; background:#1c0e14; border:1px solid var(--card-edge); border-radius:12px 12px 12px 3px; font-size:13px; line-height:1.4; }
-  .chat-message.mine{ align-self:flex-end; border-color:var(--ember-dim); border-radius:12px 12px 3px 12px; }
-  .chat-message b{ display:block; font-size:11px; color:var(--ember); margin-bottom:2px; }
-  .typing-status{ min-height:22px; padding:3px 14px; color:var(--cream-dim); font-size:11.5px; font-style:italic; }
-  .chat-compose{ display:flex; gap:8px; padding:12px; border-top:1px solid var(--card-edge); }
-  .chat-compose input{ margin:0; min-width:0; flex:1; }
-
-  /* level indicator */
-  .level-indicator{ margin-bottom:18px; }
-  .levels{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:8px; }
-  .level-btn{
-    background:#1c0e14; border:1px solid var(--card-edge); color:var(--cream-dim);
-    border-radius:12px; padding:10px 4px 9px; font-family:'Manrope', sans-serif; font-size:12.5px;
-    font-weight:600; cursor:pointer; text-align:center; transition:transform .15s ease;
-  }
-  .level-btn small{ display:block; font-weight:500; font-size:10px; opacity:.7; margin-top:2px; }
-  .level-btn:hover{ transform:translateY(-2px); }
-  .level-btn[data-level="starter"].active{ border-color:var(--starter); color:var(--starter); box-shadow:0 0 0 1px var(--starter) inset; }
-  .level-btn[data-level="naughty"].active{ border-color:var(--naughty); color:var(--naughty); box-shadow:0 0 0 1px var(--naughty) inset; }
-  .level-btn[data-level="spicy"].active{ border-color:var(--spicy); color:var(--spicy); box-shadow:0 0 0 1px var(--spicy) inset; }
-  .level-btn[data-level="naughtiest"].active{ border-color:var(--naughtiest); color:var(--naughtiest); box-shadow:0 0 0 1px var(--naughtiest) inset; }
-  .level-desc{ text-align:center; font-size:12px; color:var(--cream-dim); }
-
-  .card-wrap{ perspective:1200px; margin-bottom:20px; }
-  .card{
-    min-height:200px; border-radius:16px;
-    background:linear-gradient(160deg, #34141f 0%, #200e17 100%);
-    border:1px solid var(--card-edge); display:flex; flex-direction:column;
-    align-items:center; justify-content:center; text-align:center; padding:26px 22px;
-    position:relative; overflow:hidden;
-  }
-  .card::before{ content:""; position:absolute; inset:0; background:radial-gradient(circle at 50% 0%, rgba(224,139,95,0.10), transparent 60%); pointer-events:none; }
-  .card .tag{ font-size:11px; letter-spacing:.05em; color:var(--ember); margin-bottom:10px; }
-  .card .prompt{ font-family:'Cormorant Garamond', serif; font-size:24px; line-height:1.32; }
-  .card .hint{ margin-top:14px; font-size:12px; color:var(--cream-dim); }
-
-  .choices{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
-  .choice{
-    padding:15px 10px; border-radius:14px; border:1px solid var(--card-edge); background:#1c0e14;
-    color:var(--cream); font-family:'Cormorant Garamond', serif; font-size:20px; cursor:pointer;
-  }
-  .choice.truth{ border-color:#5b7fa8; }
-  .choice.dare{ border-color:var(--rose); }
-
-  .controls{ display:flex; gap:10px; }
-  .footer-note{ text-align:center; font-size:11.5px; color:var(--cream-dim); margin-top:16px; opacity:.65; }
-  .link{ color:var(--cream-dim); }
+:root{--bg:#180d13;--card:#2c1420;--card-edge:#4a2231;--ember:#e08b5f;--ember-dim:#a9633f;--rose:#d65b7a;--cream:#f4e9e2;--cream-dim:#c9b6ae;--starter:#7fa88f;--naughty:#d69a4e;--spicy:#d65b3a;--naughtiest:#c22f4a}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse 900px 500px at 15% -10%,#3a1a26 0%,transparent 60%),radial-gradient(ellipse 700px 500px at 100% 10%,#2c1e13 0%,transparent 55%),var(--bg);color:var(--cream);font-family:'Manrope',sans-serif;display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.stage{width:100%;max-width:520px}
+.brand{text-align:center;margin-bottom:22px}
+.brand .kicker{font-size:13px;color:var(--ember);letter-spacing:.04em}
+.brand h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:44px;margin:2px 0 0;line-height:1}
+.brand h1 em{font-style:italic;color:var(--rose)}
+.panel{background:linear-gradient(180deg,var(--card) 0%,#23101a 100%);border:1px solid var(--card-edge);border-radius:20px;padding:26px 24px 22px;box-shadow:0 30px 60px -25px rgba(0,0,0,.7)}
+p.note{text-align:center;color:var(--cream-dim);font-size:14px;margin-top:0}
+input[type=text],input[type=password]{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--card-edge);background:#1c0e14;color:var(--cream);font-family:'Manrope',sans-serif;font-size:15px;margin-bottom:10px}
+.btn{padding:12px 10px;border-radius:12px;border:none;font-family:'Manrope',sans-serif;font-weight:600;font-size:13.5px;cursor:pointer}
+.btn.full{width:100%}
+.btn.next{background:var(--ember);color:#22110a}
+.btn.skip{background:transparent;border:1px solid var(--card-edge);color:var(--cream-dim)}
+.error{text-align:center;color:var(--rose);font-size:12.5px;min-height:16px;margin:8px 0 0}
+.player-inputs{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.player-inputs input{margin:0}
+.stepper{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+.stepper button{width:38px;height:38px;border-radius:50%;border:1px solid var(--card-edge);background:#1c0e14;color:var(--cream);font-size:18px;cursor:pointer}
+.stepper .count{font-family:'Cormorant Garamond',serif;font-size:30px;min-width:40px;text-align:center}
+.who-grid{display:flex;flex-wrap:wrap;gap:10px}
+.who-grid button{flex:1 1 40%;padding:14px 8px;border-radius:14px;border:1px solid var(--card-edge);background:#1c0e14;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:19px;cursor:pointer}
+.who-grid button:disabled{opacity:.4;cursor:not-allowed}
+.stack{display:flex;flex-direction:column;gap:10px}
+.divider{text-align:center;color:var(--cream-dim);font-size:12px;margin:14px 0 10px;opacity:.7}
+.code-big{font-family:'Cormorant Garamond',serif;font-size:34px;letter-spacing:.18em;text-align:center;text-transform:uppercase}
+.invite{text-align:center;font-size:12.5px;color:var(--cream-dim);margin:-6px 0 14px}
+.invite b{color:var(--ember);letter-spacing:.12em;cursor:pointer}
+.turn-strip{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px}
+.turn-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--card-edge);font-size:12.5px;color:var(--cream-dim);background:#1c0e14}
+.turn-chip.answering{border-color:var(--ember);color:var(--ember);background:rgba(224,139,95,.1)}
+.turn-chip.online::after{content:" · online";color:var(--starter)}
+.turn-chip.waiting::after{content:" · waiting";color:var(--cream-dim)}
+.presence-summary{text-align:center;color:var(--cream-dim);font-size:12px;margin:-8px 0 16px}
+.chat-toggle{position:fixed;right:18px;bottom:18px;z-index:10;background:var(--ember);color:#22110a;box-shadow:0 10px 26px rgba(0,0,0,.35);display:none}
+.chat-panel{position:fixed;right:18px;bottom:72px;z-index:10;width:min(360px,calc(100vw - 32px));height:min(460px,calc(100vh - 110px));display:none;flex-direction:column;overflow:hidden;padding:0}
+.chat-panel.open{display:flex}
+.chat-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--card-edge)}
+.chat-head strong{font-family:'Cormorant Garamond',serif;font-size:23px}
+.chat-close{background:transparent;border:0;color:var(--cream-dim);font-size:22px;cursor:pointer}
+.chat-messages{flex:1;overflow:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.chat-message{align-self:flex-start;max-width:88%;padding:9px 11px;background:#1c0e14;border:1px solid var(--card-edge);border-radius:12px 12px 12px 3px;font-size:13px;line-height:1.4}
+.chat-message.mine{align-self:flex-end;border-color:var(--ember-dim);border-radius:12px 12px 3px 12px}
+.chat-message b{display:block;font-size:11px;color:var(--ember);margin-bottom:2px}
+.typing-status{min-height:22px;padding:3px 14px;color:var(--cream-dim);font-size:11.5px;font-style:italic}
+.chat-compose{display:flex;gap:8px;padding:12px;border-top:1px solid var(--card-edge)}
+.chat-compose input{margin:0;min-width:0;flex:1}
+.level-indicator{margin-bottom:18px}
+.levels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px}
+.level-btn{background:#1c0e14;border:1px solid var(--card-edge);color:var(--cream-dim);border-radius:12px;padding:10px 4px 9px;font-family:'Manrope',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;text-align:center;transition:transform .15s ease}
+.level-btn small{display:block;font-weight:500;font-size:10px;opacity:.7;margin-top:2px}
+.level-btn:hover{transform:translateY(-2px)}
+.level-btn[data-level="starter"].active{border-color:var(--starter);color:var(--starter);box-shadow:0 0 0 1px var(--starter) inset}
+.level-btn[data-level="naughty"].active{border-color:var(--naughty);color:var(--naughty);box-shadow:0 0 0 1px var(--naughty) inset}
+.level-btn[data-level="spicy"].active{border-color:var(--spicy);color:var(--spicy);box-shadow:0 0 0 1px var(--spicy) inset}
+.level-btn[data-level="naughtiest"].active{border-color:var(--naughtiest);color:var(--naughtiest);box-shadow:0 0 0 1px var(--naughtiest) inset}
+.level-desc{text-align:center;font-size:12px;color:var(--cream-dim)}
+.card-wrap{perspective:1200px;margin-bottom:20px}
+.card{min-height:200px;border-radius:16px;background:linear-gradient(160deg,#34141f 0%,#200e17 100%);border:1px solid var(--card-edge);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px 22px;position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(224,139,95,.10),transparent 60%);pointer-events:none}
+.card .tag{font-size:11px;letter-spacing:.05em;color:var(--ember);margin-bottom:10px}
+.card .prompt{font-family:'Cormorant Garamond',serif;font-size:24px;line-height:1.32}
+.card .hint{margin-top:14px;font-size:12px;color:var(--cream-dim)}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.choice{padding:15px 10px;border-radius:14px;border:1px solid var(--card-edge);background:#1c0e14;color:var(--cream);font-family:'Cormorant Garamond',serif;font-size:20px;cursor:pointer}
+.choice.truth{border-color:#5b7fa8}
+.choice.dare{border-color:var(--rose)}
+.controls{display:flex;gap:10px}
+.footer-note{text-align:center;font-size:11.5px;color:var(--cream-dim);margin-top:16px;opacity:.65}
+.link{color:var(--cream-dim);cursor:pointer}
 </style>
 </head>
 <body>
 
-<!-- STAGE 1: License / access gate (stands in for a paid subscription check) -->
-<div class="stage" id="licenseStage" style="max-width:360px;">
-  <div class="brand"><div class="kicker">ACCESS</div><h1>Enter Your <em>Code</em></h1></div>
-  <div class="panel">
-    <p class="note">Enter your access code to play.</p>
-    <input type="text" id="licenseInput" placeholder="Access code" autocomplete="off">
-    <button id="licenseBtn" class="btn next full">Activate</button>
-    <p class="error" id="licenseError"></p>
-  </div>
-</div>
-
-<!-- STAGE 2: Passcode -->
-<div class="stage" id="lockStage" style="max-width:360px;display:none;">
+<!-- STAGE 1: Passcode (the only password) -->
+<div class="stage" id="lockStage" style="max-width:360px;">
   <div class="brand"><div class="kicker">PRIVATE</div><h1>Game <em>Night</em></h1></div>
   <div class="panel">
-    <p class="note">Enter the room passcode.</p>
+    <p class="note">Enter the passcode.</p>
     <input type="password" id="passInput" placeholder="Passcode" autocomplete="off">
     <button id="unlockBtn" class="btn next full">Enter</button>
     <p class="error" id="lockError"></p>
   </div>
 </div>
 
-<!-- STAGE 3: Group setup (host only, runs once per session) -->
-<div class="stage" id="setupStage" style="max-width:400px;display:none;">
-  <div class="brand"><div class="kicker">SET UP THE ROOM</div><h1>Who's <em>Playing</em></h1></div>
+<!-- STAGE 2: Home — welcome back / create group / join group -->
+<div class="stage" id="homeStage" style="max-width:380px;display:none;">
+  <div class="brand"><div class="kicker">WELCOME</div><h1>Game <em>Night</em></h1></div>
   <div class="panel">
-    <p class="note">How many players?</p>
-    <div class="stepper">
-      <button id="decBtn">−</button>
-      <div class="count" id="countDisplay">2</div>
-      <button id="incBtn">+</button>
+    <p class="note" id="homeMsg"></p>
+    <div id="backBox" style="display:none;">
+      <p class="note">Welcome back, <strong id="backName" style="color:var(--ember)"></strong><br>Group <strong id="backCode"></strong></p>
+      <div class="stack">
+        <button class="btn next full" id="continueBtn">Continue</button>
+        <button class="btn skip full" id="changeNameBtn">Change my name</button>
+      </div>
+      <div class="divider">— or —</div>
     </div>
-    <div class="player-inputs" id="playerInputs"></div>
-    <button id="startRoomBtn" class="btn next full">Start the game</button>
-    <p class="error" id="setupError"></p>
+    <div class="stack">
+      <button class="btn next full" id="createBtn">Create a new group (I'm the host)</button>
+      <button class="btn skip full" id="joinBtn">Join a group with an invite code</button>
+    </div>
   </div>
 </div>
 
-<!-- STAGE 4: Pick which player you are on this device -->
+<!-- STAGE 3: Join with invite code -->
+<div class="stage" id="joinStage" style="max-width:360px;display:none;">
+  <div class="brand"><div class="kicker">JOIN</div><h1>Invite <em>Code</em></h1></div>
+  <div class="panel">
+    <p class="note">Ask the host for the group code.</p>
+    <input type="text" id="joinInput" class="code-big" placeholder="CODE" maxlength="6" autocomplete="off">
+    <button id="joinGoBtn" class="btn next full">Join</button>
+    <p class="error" id="joinError"></p>
+    <p class="footer-note"><a class="link" data-home>← Back</a></p>
+  </div>
+</div>
+
+<!-- STAGE 4: Host setup (one device only) -->
+<div class="stage" id="setupStage" style="max-width:400px;display:none;">
+  <div class="brand"><div class="kicker">HOST SETUP</div><h1>Who's <em>Playing</em></h1></div>
+  <div class="panel">
+    <p class="note">How many players? You're Player 1.</p>
+    <div class="stepper"><button id="decBtn">−</button><div class="count" id="countDisplay">2</div><button id="incBtn">+</button></div>
+    <div class="player-inputs" id="playerInputs"></div>
+    <button id="startRoomBtn" class="btn next full">Create group</button>
+    <p class="error" id="setupError"></p>
+    <p class="footer-note"><a class="link" data-home>← Back</a></p>
+  </div>
+</div>
+
+<!-- STAGE 5: Pick which player you are on this device -->
 <div class="stage" id="identityStage" style="max-width:360px;display:none;">
   <div class="brand"><div class="kicker">ONE MORE THING</div><h1>Which One's <em>You</em></h1></div>
   <div class="panel">
-    <p class="note">This is remembered on this device only.</p>
+    <p class="note">Remembered on this device. Names already in use are greyed out.</p>
     <div class="who-grid" id="whoGrid"></div>
     <p class="error" id="identityError"></p>
+    <p class="footer-note"><a class="link" data-home>← Back</a></p>
   </div>
 </div>
 
-<!-- STAGE 5: The game -->
+<!-- STAGE 6: The game -->
 <div class="stage" id="gameStage" style="display:none;">
   <div class="brand"><div class="kicker" id="groupKicker">GAME NIGHT</div><h1>After <em>Dark</em></h1></div>
   <div class="panel">
-
     <p class="note" style="font-size:12px;">
       You are <strong id="whoAmI" style="color:var(--ember);">—</strong>
-      · <a href="#" id="switchWho" class="link">not you?</a>
+      · <a class="link" id="switchWho">not you?</a>
+      · <a class="link" id="leaveBtn">leave group</a>
     </p>
+    <div class="invite">Invite code <b id="inviteCode" title="Tap to copy"></b> · <span id="expiryLeft"></span></div>
     <div class="presence-summary" id="presenceSummary">Checking who is here…</div>
-
     <div class="turn-strip" id="turnStrip"></div>
 
     <div class="level-indicator">
@@ -225,12 +197,13 @@
 
     <div class="footer-note">Play at your own pace. Anyone can call it whenever.</div>
     <div class="footer-note" id="syncStatus">Connecting…</div>
+    <div class="footer-note" id="endWrap" style="display:none;"><a class="link" id="endBtn">End group for everyone</a></div>
   </div>
 </div>
 
 <button class="btn chat-toggle" id="chatToggle" aria-expanded="false">Chat</button>
-<aside class="panel chat-panel" id="chatPanel" aria-label="Room chat">
-  <div class="chat-head"><strong>Room chat</strong><button class="chat-close" id="chatClose" aria-label="Close chat">×</button></div>
+<aside class="panel chat-panel" id="chatPanel" aria-label="Group chat">
+  <div class="chat-head"><strong>Group chat</strong><button class="chat-close" id="chatClose" aria-label="Close chat">×</button></div>
   <div class="chat-messages" id="chatMessages"></div>
   <div class="typing-status" id="typingStatus"></div>
   <form class="chat-compose" id="chatForm">
@@ -241,7 +214,8 @@
 
 <script>
 // =================================================================
-// FIREBASE
+// FIREBASE — every group lives at afterdark/groups/<CODE>, so people
+// who don't share a code never see each other's game, presence or chat.
 // =================================================================
 const firebaseConfig = {
   apiKey: "AIzaSyAKuWlsR6KuDY8NIBu1u-PCcB6GDix-ckc",
@@ -251,81 +225,52 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const gameRef = db.ref('afterdark/session');
-const licensesRef = db.ref('afterdark/licenses');
-// Presence stays inside the existing session permission scope. Game updates
-// below use update(), so this child is never overwritten by a turn change.
-const presenceRef = gameRef.child('presence');
-const messagesRef = gameRef.child('chat/messages');
-const typingRef = gameRef.child('chat/typing');
+const GROUPS = 'afterdark/groups/';
+const DAY = 24*60*60*1000;
+const PASSCODE_HASH = "deeb8051d22932f57f499495f4697b0cee64aa65201aa0b8c4cd5d6ba603333f"; // "letsplay"
+const K_DEVICE='afterdark_device_id', K_MEMBER='ad2_member', K_UNLOCK='ad2_unlock';
 
+const $ = id => document.getElementById(id);
+const STAGES = ['lockStage','homeStage','joinStage','setupStage','identityStage','gameStage'];
+function show(id){
+  STAGES.forEach(s => $(s).style.display = s===id ? 'block' : 'none');
+  $('chatToggle').style.display = id==='gameStage' ? 'block' : 'none';
+  if (id!=='gameStage') $('chatPanel').classList.remove('open');
+}
 async function sha256(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-// =================================================================
-// STAGE 1 — ACCESS CODE ("subscription" stand-in)
-// To issue a code: in Firebase Console > Realtime Database, add under
-// afterdark/licenses a key like "SUMMER2026" with value true.
-// A real self-serve version would create this key automatically after
-// a Stripe payment via a small Cloud Function — that's the piece to
-// add later; this version checks codes you create by hand.
-// =================================================================
-const licenseStage = document.getElementById('licenseStage');
-const lockStage = document.getElementById('lockStage');
-const setupStage = document.getElementById('setupStage');
-const identityStage = document.getElementById('identityStage');
-const gameStage = document.getElementById('gameStage');
+// Server-synced clock so the 24h reset is the same for every device
+let offset = 0;
+const now = () => Date.now() + offset;
 
-document.getElementById('licenseBtn').addEventListener('click', async ()=>{
-  const code = document.getElementById('licenseInput').value.trim().toUpperCase();
-  const errEl = document.getElementById('licenseError');
-  if (!code){ errEl.textContent = "Enter a code."; return; }
-  errEl.textContent = "Checking…";
-  try {
-    const snap = await licensesRef.child(code).once('value');
-    if (snap.exists() && snap.val() === true){
-      localStorage.setItem('afterdark_license', code);
-      errEl.textContent = "";
-      licenseStage.style.display = 'none';
-      lockStage.style.display = 'block';
-    } else {
-      errEl.textContent = "That code isn't active.";
-    }
-  } catch(e){
-    errEl.textContent = "Couldn't check the code — try again.";
-  }
-});
+const deviceId = localStorage.getItem(K_DEVICE) ||
+  (crypto.randomUUID ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+localStorage.setItem(K_DEVICE, deviceId);
 
-// This is a shared game, not a paid-access flow. Go straight to the one
-// room passcode so players do not mistake the old license-code screen for it.
-(function showPasscodeScreen(){
-  licenseStage.style.display = 'none';
-  lockStage.style.display = 'block';
-})();
+// Remembered on THIS device: which group + which player
+const getMember = () => { try { return JSON.parse(localStorage.getItem(K_MEMBER)); } catch(e){ return null; } };
+const setMember = (code,name) => localStorage.setItem(K_MEMBER, JSON.stringify({code,name}));
 
 // =================================================================
-// STAGE 2 — PASSCODE
+// PASSCODE
 // =================================================================
-const PASSCODE_HASH = "deeb8051d22932f57f499495f4697b0cee64aa65201aa0b8c4cd5d6ba603333f"; // "letsplay"
-
-document.getElementById('unlockBtn').addEventListener('click', tryUnlock);
-document.getElementById('passInput').addEventListener('keydown', e=>{ if (e.key==='Enter') tryUnlock(); });
+$('unlockBtn').addEventListener('click', tryUnlock);
+$('passInput').addEventListener('keydown', e=>{ if (e.key==='Enter') tryUnlock(); });
 async function tryUnlock(){
-  const val = document.getElementById('passInput').value.trim().toLowerCase();
-  const hash = await sha256(val);
+  const hash = await sha256($('passInput').value.trim().toLowerCase());
   if (hash === PASSCODE_HASH){
-    lockStage.style.display = 'none';
+    localStorage.setItem(K_UNLOCK, String(Date.now()));
     enterRoom();
   } else {
-    document.getElementById('lockError').textContent = "That's not it — try again.";
+    $('lockError').textContent = "That's not it — try again.";
   }
 }
 
 // =================================================================
-// GROUP CONTENT — expanded pools, shuffled per level+type so nothing
-// repeats until the whole pool has been used once.
+// CONTENT
 // =================================================================
 const CONTENT = {
   starter: {
@@ -465,7 +410,6 @@ const CONTENT = {
     ]
   }
 };
-
 const LEVEL_LABELS = { starter:"STARTER", naughty:"NAUGHTY", spicy:"SPICY", naughtiest:"NAUGHTIEST" };
 const LEVEL_DESCRIPTIONS = {
   starter: "Icebreakers — easy, funny, low-stakes.",
@@ -484,14 +428,8 @@ function shuffledIndices(n){
 }
 
 const DEFAULT_STATE = {
-  players: [],          // ["Jim","Aliana","Sam"]
-  order: [],            // shuffled turn order, indices into players
-  currentIndex: 0,      // pointer into order[]
-  level: null,
-  phase: 'idle',        // idle | revealed
-  type: null,
-  promptText: '',
-  used: {               // shuffle-bag draw order per level+type, plus a cursor
+  players: [], order: [], currentIndex: 0, level: null, phase: 'idle', type: null, promptText: '',
+  used: {
     starter:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} },
     naughty:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} },
     spicy:{ truth:{order:[],cursor:0}, dare:{order:[],cursor:0} },
@@ -499,379 +437,403 @@ const DEFAULT_STATE = {
   }
 };
 
-let state = null;
-let myName = localStorage.getItem('afterdark_who') || null;
-let presence = {};
-const deviceId = localStorage.getItem('afterdark_device_id') ||
-  (crypto.randomUUID ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-localStorage.setItem('afterdark_device_id', deviceId);
-
-function setMyPresence(name){
-  const myPresenceRef = presenceRef.child(deviceId);
-  myPresenceRef.onDisconnect().remove();
-  return myPresenceRef.set({ name, connectedAt: firebase.database.ServerValue.TIMESTAMP });
-}
-
-function clearMyTyping(){
-  typingRef.child(deviceId).remove().catch(()=>{});
-}
-
-// Sessions live in Firebase between deployments. Older or partially-written
-// sessions may not have every field the current game expects; normalize them
-// before rendering so choosing a name can never leave the game on a blank view.
 function normalizeState(data){
   const fallback = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  const players = Array.isArray(data?.players)
-    ? data.players.filter(name => typeof name === 'string' && name.trim())
-    : [];
-  const validOrder = Array.isArray(data?.order)
-    && data.order.length === players.length
+  const players = Array.isArray(data?.players) ? data.players.filter(n => typeof n==='string' && n.trim()) : [];
+  const validOrder = Array.isArray(data?.order) && data.order.length === players.length
     && new Set(data.order).size === players.length
-    && data.order.every(index => Number.isInteger(index) && index >= 0 && index < players.length);
-  const normalizedUsed = {};
-
+    && data.order.every(i => Number.isInteger(i) && i >= 0 && i < players.length);
+  const used = {};
   Object.keys(CONTENT).forEach(level => {
-    normalizedUsed[level] = {};
-    ['truth', 'dare'].forEach(type => {
+    used[level] = {};
+    ['truth','dare'].forEach(type => {
       const bag = data?.used?.[level]?.[type];
-      normalizedUsed[level][type] = Array.isArray(bag?.order) && Number.isInteger(bag?.cursor)
-        ? { order: bag.order, cursor: Math.max(0, bag.cursor) }
-        : fallback.used[level][type];
+      used[level][type] = Array.isArray(bag?.order) && Number.isInteger(bag?.cursor)
+        ? { order: bag.order, cursor: Math.max(0, bag.cursor) } : fallback.used[level][type];
     });
   });
-
   const level = Object.hasOwn(CONTENT, data?.level) ? data.level : null;
+  const createdAt = Number.isFinite(data?.createdAt) ? data.createdAt : 0;
   return {
-    ...fallback,
-    ...data,
-    players,
-    order: validOrder ? data.order : players.map((_, index) => index),
+    ...fallback, ...data, players,
+    order: validOrder ? data.order : players.map((_,i)=>i),
     currentIndex: Number.isInteger(data?.currentIndex) && data.currentIndex >= 0 ? data.currentIndex : 0,
     level,
     phase: data?.phase === 'revealed' && level ? 'revealed' : 'idle',
     type: data?.type === 'truth' || data?.type === 'dare' ? data.type : null,
     promptText: typeof data?.promptText === 'string' ? data.promptText : '',
-    used: normalizedUsed
+    used,
+    createdAt,
+    expiresAt: Number.isFinite(data?.expiresAt) ? data.expiresAt : createdAt + DAY
   };
 }
 
 // =================================================================
-// STAGE 3 — GROUP SETUP (host builds the room; others just join)
+// GROUP PLUMBING
 // =================================================================
-let playerCount = 2;
-const countDisplay = document.getElementById('countDisplay');
-const playerInputsEl = document.getElementById('playerInputs');
+let state = null, myName = null, groupCode = null, inGame = false;
+let groupRef, presenceRef, messagesRef, typingRef;
+let presence = {}, typing = {}, typingTimer = null, listeners = [];
 
+function refsFor(code){
+  groupCode = code;
+  groupRef = db.ref(GROUPS + code);
+  presenceRef = groupRef.child('presence');
+  messagesRef = groupRef.child('chat/messages');
+  typingRef = groupRef.child('chat/typing');
+}
+function listen(ref, fn, errFn){ ref.on('value', fn, errFn || (()=>{})); listeners.push(() => ref.off('value', fn)); }
+function detach(){ listeners.forEach(f => f()); listeners = []; }
+function clearMyTyping(){ if (typingRef) typingRef.child(deviceId).remove().catch(()=>{}); }
+
+async function fetchGroup(code){
+  let d;
+  try { d = (await db.ref(GROUPS + code).once('value')).val(); }
+  catch(e){
+    // The database rules refuse to read a group after its 24h are up
+    db.ref(GROUPS + code).remove().catch(()=>{});
+    return { err: "That group has expired — groups reset after 24 hours." };
+  }
+  if (!d || !d.players) return { err: "No group found with that code." };
+  const st = normalizeState(d);
+  if (now() > st.expiresAt){
+    db.ref(GROUPS + code).remove().catch(()=>{});
+    return { err: "That group has expired — groups reset after 24 hours." };
+  }
+  return { st };
+}
+
+function genCode(){
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let c = ''; for (let i=0;i<5;i++) c += chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+function leaveGroup(msg){
+  detach();
+  inGame = false;
+  if (presenceRef) presenceRef.child(deviceId).remove().catch(()=>{});
+  clearMyTyping();
+  localStorage.removeItem(K_MEMBER);
+  state = null; myName = null; presence = {}; typing = {};
+  $('chatMessages').innerHTML = '';
+  showHome(msg);
+}
+function expireGroup(){
+  if (groupRef) groupRef.remove().catch(()=>{});
+  leaveGroup("This session reset after 24 hours. Set up a new game or join a new group.");
+}
+setInterval(()=>{ if (inGame && state && now() > state.expiresAt) expireGroup(); }, 30000);
+
+// =================================================================
+// HOME / JOIN / SETUP / IDENTITY
+// =================================================================
+let pending = null; // validated saved group on the home screen
+
+async function showHome(msg){
+  show('homeStage');
+  $('homeMsg').textContent = msg || '';
+  $('backBox').style.display = 'none';
+  const m = getMember();
+  if (!m) return;
+  try {
+    const r = await fetchGroup(m.code);
+    if (r.err || !r.st.players.includes(m.name)){
+      localStorage.removeItem(K_MEMBER);
+      if (!msg) $('homeMsg').textContent = "Your last group has ended. Create or join a new one.";
+      return;
+    }
+    pending = r.st;
+    $('backName').textContent = m.name;
+    $('backCode').textContent = m.code;
+    $('backBox').style.display = 'block';
+  } catch(e){}
+}
+
+document.querySelectorAll('[data-home]').forEach(a => a.addEventListener('click', () => showHome()));
+$('createBtn').addEventListener('click', () => { $('setupError').textContent=''; show('setupStage'); });
+$('joinBtn').addEventListener('click', () => { $('joinError').textContent=''; $('joinInput').value=''; show('joinStage'); });
+
+$('continueBtn').addEventListener('click', () => {
+  const m = getMember(); if (!m || !pending) return;
+  refsFor(m.code); state = pending; myName = m.name; enterGame();
+});
+$('changeNameBtn').addEventListener('click', () => {
+  const m = getMember(); if (!m || !pending) return;
+  showIdentity(m.code, pending);
+});
+
+$('joinGoBtn').addEventListener('click', joinByCode);
+$('joinInput').addEventListener('keydown', e => { if (e.key==='Enter') joinByCode(); });
+async function joinByCode(){
+  const code = $('joinInput').value.trim().toUpperCase();
+  const err = $('joinError');
+  if (code.length < 4){ err.textContent = "Enter the invite code."; return; }
+  err.textContent = "Checking…";
+  try {
+    const r = await fetchGroup(code);
+    if (r.err){ err.textContent = r.err; return; }
+    err.textContent = '';
+    showIdentity(code, r.st);
+  } catch(e){ err.textContent = "Couldn't check the code — try again."; }
+}
+
+// ----- Host setup (one device creates the group) -----
+let playerCount = 2;
 function renderPlayerInputs(){
-  countDisplay.textContent = playerCount;
-  playerInputsEl.innerHTML = '';
+  $('countDisplay').textContent = playerCount;
+  const box = $('playerInputs'); box.innerHTML = '';
   for (let i=0;i<playerCount;i++){
     const inp = document.createElement('input');
-    inp.type = 'text';
-    inp.placeholder = `Player ${i+1} name`;
-    inp.id = `pname${i}`;
-    playerInputsEl.appendChild(inp);
+    inp.type = 'text'; inp.id = `pname${i}`; inp.maxLength = 20;
+    inp.placeholder = i===0 ? 'Your name (host)' : `Player ${i+1} name`;
+    box.appendChild(inp);
   }
 }
-document.getElementById('incBtn').addEventListener('click', ()=>{ if (playerCount<10){ playerCount++; renderPlayerInputs(); } });
-document.getElementById('decBtn').addEventListener('click', ()=>{ if (playerCount>2){ playerCount--; renderPlayerInputs(); } });
+$('incBtn').addEventListener('click', ()=>{ if (playerCount<10){ playerCount++; renderPlayerInputs(); } });
+$('decBtn').addEventListener('click', ()=>{ if (playerCount>2){ playerCount--; renderPlayerInputs(); } });
 renderPlayerInputs();
 
-document.getElementById('startRoomBtn').addEventListener('click', async ()=>{
-  const names = [];
+$('startRoomBtn').addEventListener('click', async ()=>{
+  const err = $('setupError'); const names = [];
   for (let i=0;i<playerCount;i++){
-    const v = document.getElementById(`pname${i}`).value.trim();
-    if (!v){ document.getElementById('setupError').textContent = "Fill in every name."; return; }
+    const v = $(`pname${i}`).value.trim();
+    if (!v){ err.textContent = "Fill in every name."; return; }
     names.push(v);
   }
-  const order = shuffledIndices(names.length);
-  const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
-  fresh.players = names;
-  fresh.order = order;
-  // Keep this device in sync immediately.  Waiting for Firebase's live
-  // listener here left `state` null when the host chose their identity,
-  // so render() had nothing to show and the screen appeared stuck.
-  state = normalizeState(fresh);
+  if (new Set(names.map(n => n.toLowerCase())).size !== names.length){ err.textContent = "Each name must be different."; return; }
+  err.textContent = "Creating…";
   try {
-    await gameRef.set(state);
-  } catch (error) {
-    document.getElementById('setupError').textContent = "Couldn't create the room — check your connection and try again.";
-    return;
+    let code = null;
+    for (let i=0;i<8 && !code;i++){
+      const c = genCode();
+      if (!(await db.ref(GROUPS + c).once('value')).exists()) code = c;
+    }
+    if (!code) throw new Error('no code');
+    const fresh = JSON.parse(JSON.stringify(DEFAULT_STATE));
+    fresh.players = names;
+    fresh.order = shuffledIndices(names.length);
+    fresh.createdAt = now();
+    fresh.expiresAt = now() + DAY;
+    fresh.adminDevice = deviceId;
+    await db.ref(GROUPS + code).set(fresh);
+    refsFor(code);
+    state = normalizeState(fresh);
+    myName = names[0];                 // host is Player 1
+    setMember(code, myName);
+    err.textContent = '';
+    enterGame();
+  } catch(e){
+    err.textContent = "Couldn't create the group — check your connection and try again.";
   }
-  setupStage.style.display = 'none';
-  // host still needs to pick which of these players they are
-  showIdentityStage(names);
 });
 
-// =================================================================
-// STAGE 4 — IDENTITY (which player is this device)
-// =================================================================
-function showIdentityStage(players){
-  const grid = document.getElementById('whoGrid');
-  grid.innerHTML = '';
-  players.forEach(name=>{
+// ----- Identity (joiners / change name) -----
+async function showIdentity(code, st){
+  detach();
+  if (inGame){ inGame = false; if (presenceRef) presenceRef.child(deviceId).remove().catch(()=>{}); clearMyTyping(); }
+  refsFor(code); state = st;
+  const grid = $('whoGrid'); grid.innerHTML = '';
+  $('identityError').textContent = '';
+  let taken = new Set();
+  try {
+    const p = (await presenceRef.once('value')).val() || {};
+    Object.entries(p).forEach(([id, e]) => { if (id !== deviceId && e?.name) taken.add(e.name); });
+  } catch(e){}
+  st.players.forEach(name => {
     const b = document.createElement('button');
-    b.textContent = `I'm ${name}`;
-    b.addEventListener('click', async ()=>{
-      myName = name;
-      localStorage.setItem('afterdark_who', name);
-
-      // `state` is normally set before this screen opens. If this page
-      // arrived here before Firebase finished syncing, fetch it explicitly
-      // and keep the user on this screen if no playable room is available.
-      if (!state || !state.players || !state.players.length){
-        const errorEl = document.getElementById('identityError');
-        errorEl.textContent = 'Loading the room…';
-        try {
-          const snap = await gameRef.once('value');
-          const room = snap.val();
-          if (!room || !room.players || !room.players.length) throw new Error('Room unavailable');
-          state = normalizeState(room);
-          errorEl.textContent = '';
-        } catch (error) {
-          errorEl.textContent = "Couldn't load the room. Check your connection and try again.";
-          return;
-        }
-      }
-      setMyPresence(name).catch(()=>{});
-      identityStage.style.display = 'none';
-      gameStage.style.display = 'block';
-      render();
-    });
+    b.textContent = taken.has(name) ? `${name} (playing)` : `I'm ${name}`;
+    b.disabled = taken.has(name);
+    b.addEventListener('click', () => { myName = name; setMember(code, name); enterGame(); });
     grid.appendChild(b);
   });
-  identityStage.style.display = 'block';
+  show('identityStage');
 }
 
-document.getElementById('switchWho').addEventListener('click', e=>{
-  e.preventDefault();
-  localStorage.removeItem('afterdark_who');
-  presenceRef.child(deviceId).remove().catch(()=>{});
-  clearMyTyping();
-  myName = null;
-  gameStage.style.display = 'none';
-  showIdentityStage(state.players);
+$('switchWho').addEventListener('click', () => { const code = groupCode, st = state; showIdentity(code, st); });
+$('leaveBtn').addEventListener('click', () => { if (confirm('Leave this group on this device?')) leaveGroup(); });
+$('endBtn').addEventListener('click', () => {
+  if (state?.adminDevice === deviceId && confirm('End this group for everyone?')) groupRef.remove().catch(()=>{});
 });
 
 // =================================================================
-// ENTER ROOM — decide which stage to show after passcode
+// ENTER ROOM (after passcode / on load)
 // =================================================================
-function enterRoom(){
-  gameRef.once('value').then(snap=>{
-    const data = snap.val();
-    if (!data || !data.players || data.players.length === 0){
-      setupStage.style.display = 'block';
-    } else {
-      state = normalizeState(data);
-      const saved = localStorage.getItem('afterdark_who');
-      if (saved && state.players.includes(saved)){
-        myName = saved;
-        setMyPresence(myName).catch(()=>{});
-        gameStage.style.display = 'block';
-      } else {
-        presenceRef.child(deviceId).remove().catch(()=>{});
-        showIdentityStage(state.players);
-      }
-    }
-  });
+async function enterRoom(){
+  try { offset = (await db.ref('.info/serverTimeOffset').once('value')).val() || 0; } catch(e){}
+  showHome();
 }
 
 // =================================================================
-// GAME LOGIC
+// GAME
 // =================================================================
-const levelsEl = document.getElementById('levels');
-const cardTag = document.getElementById('cardTag');
-const cardPrompt = document.getElementById('cardPrompt');
-const cardHint = document.getElementById('cardHint');
-const choicesEl = document.getElementById('choices');
-const nextBtn = document.getElementById('nextBtn');
-const skipBtn = document.getElementById('skipBtn');
-const turnStrip = document.getElementById('turnStrip');
-const syncStatus = document.getElementById('syncStatus');
-const groupKicker = document.getElementById('groupKicker');
-const levelDesc = document.getElementById('levelDesc');
-const presenceSummary = document.getElementById('presenceSummary');
-const chatToggle = document.getElementById('chatToggle');
-const chatPanel = document.getElementById('chatPanel');
-const chatMessages = document.getElementById('chatMessages');
-const typingStatus = document.getElementById('typingStatus');
-const chatInput = document.getElementById('chatInput');
-let typing = {};
-let typingTimer = null;
+function enterGame(){
+  detach();
+  inGame = true;
+  startListeners();
+  const mine = presenceRef.child(deviceId);
+  mine.onDisconnect().remove();
+  mine.set({ name: myName, connectedAt: firebase.database.ServerValue.TIMESTAMP }).catch(()=>{});
+  show('gameStage');
+  render();
+}
+
+function startListeners(){
+  listen(groupRef, snap => {
+    const d = snap.val();
+    if (!d || !d.players){ if (inGame) leaveGroup("This group has ended."); return; }
+    state = normalizeState(d);
+    if (inGame && now() > state.expiresAt){ expireGroup(); return; }
+    $('syncStatus').textContent = "Synced live with everyone in your group.";
+    if (inGame) render();
+  }, () => { if (inGame) expireGroup(); });
+  listen(presenceRef, snap => { presence = snap.val() || {}; if (inGame) render(); });
+  listen(messagesRef.limitToLast(100), snap => renderMessages(snap.val()));
+  listen(typingRef, snap => { typing = snap.val() || {}; renderTyping(); setTimeout(renderTyping, 3600); });
+}
 
 function currentPlayer(){
   if (!state || !state.players.length) return null;
-  const idx = state.order[state.currentIndex % state.order.length];
-  return state.players[idx];
+  return state.players[state.order[state.currentIndex % state.order.length]];
 }
-
+function onlineSet(){
+  return new Set(Object.values(presence).map(e => e && e.name).filter(n => state.players.includes(n)));
+}
+// The player whose turn it is acts; the host can act for someone who isn't online
+function canAct(){
+  const t = currentPlayer();
+  return myName === t || (state.adminDevice === deviceId && !onlineSet().has(t));
+}
 function writeState(patch){
   state = { ...state, ...patch };
-  gameRef.update(patch);
+  groupRef.update(patch);
 }
 
 function render(){
-  if (!state || !state.players || !state.players.length) return;
-
-  document.getElementById('whoAmI').textContent = myName || '—';
-  groupKicker.textContent = `${state.players.length} PLAYERS`;
+  if (!state || !state.players.length) return;
+  $('whoAmI').textContent = myName || '—';
+  $('groupKicker').textContent = `${state.players.length} PLAYERS`;
+  $('inviteCode').textContent = groupCode;
+  const left = Math.max(0, state.expiresAt - now());
+  $('expiryLeft').textContent = `resets in ${Math.floor(left/3600000)}h ${Math.floor(left%3600000/60000)}m`;
+  $('endWrap').style.display = state.adminDevice === deviceId ? 'block' : 'none';
 
   const turn = currentPlayer();
-  const onlineNames = new Set(
-    Object.values(presence).map(entry => entry && entry.name).filter(name => state.players.includes(name))
-  );
-  const onlinePlayers = state.players.filter(name => onlineNames.has(name));
-  presenceSummary.textContent = onlinePlayers.length
-    ? `${onlinePlayers.join(' and ')} ${onlinePlayers.length === 1 ? 'is' : 'are'} online now.`
-    : 'No players are online yet.';
-  turnStrip.innerHTML = '';
-  state.players.forEach(name=>{
+  const online = onlineSet();
+  const here = state.players.filter(n => online.has(n));
+  $('presenceSummary').textContent = here.length
+    ? `${here.join(' and ')} ${here.length===1?'is':'are'} online now.` : 'No players are online yet.';
+  const strip = $('turnStrip'); strip.innerHTML = '';
+  state.players.forEach(name => {
     const chip = document.createElement('span');
-    chip.className = 'turn-chip' + (name === turn ? ' answering' : '') + (onlineNames.has(name) ? ' online' : ' waiting');
-    chip.textContent = name === turn ? `${name} (answering)` : name;
-    turnStrip.appendChild(chip);
+    chip.className = 'turn-chip' + (name===turn?' answering':'') + (online.has(name)?' online':' waiting');
+    chip.textContent = name===turn ? `${name} (answering)` : name;
+    strip.appendChild(chip);
   });
 
-  [...levelsEl.children].forEach(btn=>{
-    btn.classList.toggle('active', btn.dataset.level === state.level);
-  });
-  levelDesc.textContent = state.level ? LEVEL_DESCRIPTIONS[state.level] : "Pick a level to start.";
+  [...$('levels').children].forEach(b => b.classList.toggle('active', b.dataset.level === state.level));
+  $('levelDesc').textContent = state.level ? LEVEL_DESCRIPTIONS[state.level] : "Pick a level to start.";
 
   if (state.phase === 'idle'){
-    cardTag.textContent = state.level ? LEVEL_LABELS[state.level] + " — CHOOSE ONE" : "READY WHEN YOU ARE";
-    cardPrompt.textContent = state.level ? `${turn}, pick truth or dare.` : "Pick a level, then choose truth or dare.";
-    cardHint.textContent = "";
-    choicesEl.style.display = state.level ? 'grid' : 'none';
+    $('cardTag').textContent = state.level ? LEVEL_LABELS[state.level] + " — CHOOSE ONE" : "READY WHEN YOU ARE";
+    $('cardPrompt').textContent = state.level ? `${turn}, pick truth or dare.` : "Pick a level, then choose truth or dare.";
+    $('cardHint').textContent = "";
+    $('choices').style.display = state.level ? 'grid' : 'none';
   } else {
-    cardTag.textContent = `${LEVEL_LABELS[state.level]} · ${state.type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
-    cardPrompt.textContent = state.promptText;
-    cardHint.textContent = "Then pass the turn.";
-    choicesEl.style.display = 'none';
+    $('cardTag').textContent = `${LEVEL_LABELS[state.level]} · ${state.type.toUpperCase()} · FOR ${turn.toUpperCase()}`;
+    $('cardPrompt').textContent = state.promptText;
+    $('cardHint').textContent = "Then pass the turn.";
+    $('choices').style.display = 'none';
   }
 }
 
-// Draws from a shuffled "bag" per level+type so nothing repeats until
-// every prompt in that pool has been used once, then it reshuffles.
 function pickPrompt(level, type){
   const pool = CONTENT[level][type];
   let bag = state.used[level][type];
-  if (!bag.order.length || bag.cursor >= bag.order.length){
-    bag = { order: shuffledIndices(pool.length), cursor: 0 };
-  }
+  if (!bag.order.length || bag.cursor >= bag.order.length) bag = { order: shuffledIndices(pool.length), cursor: 0 };
   const idx = bag.order[bag.cursor];
   const newBag = { order: bag.order, cursor: bag.cursor + 1 };
-  const newUsed = { ...state.used, [level]: { ...state.used[level], [type]: newBag } };
-  return { text: pool[idx], newUsed };
+  return { text: pool[idx], newUsed: { ...state.used, [level]: { ...state.used[level], [type]: newBag } } };
 }
 
-levelsEl.addEventListener('click', e=>{
-  const btn = e.target.closest('.level-btn');
-  if (!btn) return;
+$('levels').addEventListener('click', e => {
+  const btn = e.target.closest('.level-btn'); if (!btn) return;
   writeState({ level: btn.dataset.level, phase: 'idle', type: null, promptText: '' });
 });
-
-choicesEl.addEventListener('click', e=>{
+$('choices').addEventListener('click', e => {
   const btn = e.target.closest('.choice');
   if (!btn || !state.level) return;
-  if (myName !== currentPlayer()){
-    cardHint.textContent = `It's ${currentPlayer()}'s turn to answer.`;
-    return;
-  }
+  if (!canAct()){ $('cardHint').textContent = `It's ${currentPlayer()}'s turn to answer.`; return; }
   const { text, newUsed } = pickPrompt(state.level, btn.dataset.type);
   writeState({ phase: 'revealed', type: btn.dataset.type, promptText: text, used: newUsed });
 });
-
-nextBtn.addEventListener('click', ()=>{
-  if (myName !== currentPlayer()){
-    cardHint.textContent = `Only ${currentPlayer()} can pass the turn right now.`;
-    return;
-  }
+$('nextBtn').addEventListener('click', () => {
+  if (!canAct()){ $('cardHint').textContent = `Only ${currentPlayer()} can pass the turn right now.`; return; }
   writeState({ currentIndex: state.currentIndex + 1, phase: 'idle', type: null, promptText: '' });
 });
-
-skipBtn.addEventListener('click', ()=>{
-  if (myName !== currentPlayer()){
-    cardHint.textContent = `Only ${currentPlayer()} can skip right now.`;
-    return;
-  }
+$('skipBtn').addEventListener('click', () => {
+  if (!canAct()){ $('cardHint').textContent = `Only ${currentPlayer()} can skip right now.`; return; }
   writeState({ phase: 'idle', type: null, promptText: '' });
 });
-
-choicesEl.style.display = 'none';
-
-gameRef.on('value', snapshot=>{
-  const data = snapshot.val();
-  if (data && data.players && data.players.length){
-    state = normalizeState(data);
-    syncStatus.textContent = "Synced live with everyone in the room.";
-    if (gameStage.style.display === 'block') render();
-  }
+$('inviteCode').addEventListener('click', () => {
+  if (navigator.clipboard) navigator.clipboard.writeText(groupCode).then(() => { $('inviteCode').textContent = 'COPIED'; setTimeout(render, 1200); }).catch(()=>{});
 });
+$('choices').style.display = 'none';
 
-presenceRef.on('value', snapshot=>{
-  presence = snapshot.val() || {};
-  if (gameStage.style.display === 'block') render();
-});
-
+// =================================================================
+// CHAT (per group)
+// =================================================================
 function renderMessages(messages){
-  chatMessages.innerHTML = '';
-  Object.entries(messages || {}).forEach(([id, message]) => {
-    if (!message || typeof message.text !== 'string') return;
+  const box = $('chatMessages'); box.innerHTML = '';
+  Object.values(messages || {}).forEach(m => {
+    if (!m || typeof m.text !== 'string') return;
     const bubble = document.createElement('div');
-    bubble.className = 'chat-message' + (message.deviceId === deviceId ? ' mine' : '');
-    const author = document.createElement('b');
-    author.textContent = message.name || 'Player';
-    const text = document.createElement('span');
-    text.textContent = message.text;
-    bubble.append(author, text);
-    chatMessages.appendChild(bubble);
+    bubble.className = 'chat-message' + (m.deviceId === deviceId ? ' mine' : '');
+    const a = document.createElement('b'); a.textContent = m.name || 'Player';
+    const t = document.createElement('span'); t.textContent = m.text;
+    bubble.append(a, t); box.appendChild(bubble);
   });
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+  box.scrollTop = box.scrollHeight;
 }
-
 function renderTyping(){
   const names = [...new Set(Object.entries(typing)
-    .filter(([id, entry]) => id !== deviceId && entry?.name && (!entry.at || Date.now() - entry.at < 3500))
-    .map(([, entry]) => entry.name))];
-  typingStatus.textContent = names.length ? `${names.join(' and ')} ${names.length === 1 ? 'is' : 'are'} typing…` : '';
+    .filter(([id, e]) => id !== deviceId && e?.name && (!e.at || now() - e.at < 3500))
+    .map(([, e]) => e.name))];
+  $('typingStatus').textContent = names.length ? `${names.join(' and ')} ${names.length===1?'is':'are'} typing…` : '';
 }
-
-chatToggle.addEventListener('click', ()=>{
-  const open = chatPanel.classList.toggle('open');
-  chatToggle.setAttribute('aria-expanded', String(open));
-  if (open) chatInput.focus();
+$('chatToggle').addEventListener('click', () => {
+  const open = $('chatPanel').classList.toggle('open');
+  $('chatToggle').setAttribute('aria-expanded', String(open));
+  if (open) $('chatInput').focus();
 });
-document.getElementById('chatClose').addEventListener('click', ()=>{
-  chatPanel.classList.remove('open');
-  chatToggle.setAttribute('aria-expanded', 'false');
+$('chatClose').addEventListener('click', () => {
+  $('chatPanel').classList.remove('open');
+  $('chatToggle').setAttribute('aria-expanded', 'false');
 });
-chatInput.addEventListener('input', ()=>{
-  if (!myName) return;
-  if (chatInput.value.trim()){
+$('chatInput').addEventListener('input', () => {
+  if (!myName || !typingRef) return;
+  if ($('chatInput').value.trim()){
     typingRef.child(deviceId).onDisconnect().remove();
     typingRef.child(deviceId).set({ name: myName, at: firebase.database.ServerValue.TIMESTAMP }).catch(()=>{});
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(clearMyTyping, 2500);
-  } else {
-    clearTimeout(typingTimer);
-    clearMyTyping();
-  }
+    clearTimeout(typingTimer); typingTimer = setTimeout(clearMyTyping, 2500);
+  } else { clearTimeout(typingTimer); clearMyTyping(); }
 });
-document.getElementById('chatForm').addEventListener('submit', e=>{
+$('chatForm').addEventListener('submit', e => {
   e.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text || !myName) return;
+  const text = $('chatInput').value.trim();
+  if (!text || !myName || !inGame) return;
   messagesRef.push({ name: myName, text, deviceId, sentAt: firebase.database.ServerValue.TIMESTAMP });
-  chatInput.value = '';
-  clearTimeout(typingTimer);
-  clearMyTyping();
+  $('chatInput').value = '';
+  clearTimeout(typingTimer); clearMyTyping();
 });
-messagesRef.limitToLast(100).on('value', snapshot=> renderMessages(snapshot.val()));
-typingRef.on('value', snapshot=>{
-  typing = snapshot.val() || {};
-  renderTyping();
-  setTimeout(renderTyping, 3600);
-});
+
+// =================================================================
+// START — skip the passcode if this device unlocked in the last 24h
+// =================================================================
+(function boot(){
+  const t = Number(localStorage.getItem(K_UNLOCK));
+  if (t && Date.now() - t < DAY) enterRoom(); else show('lockStage');
+})();
 </script>
 </body>
 </html>
