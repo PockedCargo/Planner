@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Us</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#140d17; --card:#1f1726; --card-edge:#3a2a44;
+    --ember:#d6a564; --rose:#c97aa8; --cream:#f3ece8; --cream-dim:#bcadc0;
+    --mine:#3a2a44; --theirs:#241a2d; --accent:#8e7bd1;
+  }
+  *{box-sizing:border-box;}
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    margin:0; min-height:100vh;
+    background:var(--bg);
+    color:var(--cream); font-family:'Manrope', sans-serif;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:28px 14px;
+  }
+  /* fixed glow layer so the gradient never tiles/seams while scrolling */
+  body::before{
+    content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:
+      radial-gradient(ellipse 900px 500px at 10% -10%, #2a1d33 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, #1d1424 0%, transparent 55%),
+      var(--bg);
+  }
+  button{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  .stage{ width:100%; max-width:480px; }
+  .brand{ text-align:center; margin-bottom:18px; }
+  .brand .kicker{ font-size:12px; color:var(--ember); letter-spacing:.08em; }
+  .brand h1{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:40px; margin:2px 0 0; line-height:1; }
+  .brand h1 em{ font-style:italic; color:var(--rose); }
+  .panel{
+    background:linear-gradient(180deg, var(--card) 0%, #170f1c 100%);
+    border:1px solid var(--card-edge); border-radius:20px;
+    padding:20px 18px; box-shadow:0 30px 60px -25px rgba(0,0,0,.7);
+    margin-bottom:16px;
+  }
+  p.note{ text-align:center; color:var(--cream-dim); font-size:13.5px; margin:0 0 14px; }
+  .who-grid{ display:flex; gap:10px; }
+  .who-grid button{
+    flex:1; padding:16px 8px; border-radius:14px; border:1px solid var(--card-edge);
+    background:#1a1220; color:var(--cream); font-family:'Cormorant Garamond', serif; font-size:20px; cursor:pointer;
+  }
+
+  /* header row inside dashboard */
+  .hdr{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .hdr .who{ font-size:12px; color:var(--cream-dim); }
+  .hdr .who strong{ color:var(--ember); }
+  .hdr a{ color:var(--cream-dim); font-size:11.5px; text-decoration:none; }
+  .status{ text-align:center; font-size:11px; color:var(--cream-dim); opacity:.7; margin-bottom:6px; }
+  .presence{ text-align:center; font-size:12px; margin-bottom:14px; min-height:16px; }
+  .presence.online{ color:#8fd6a8; }
+  .presence.offline{ color:var(--cream-dim); opacity:.7; }
+  .toast{
+    position:fixed; left:50%; top:16px; transform:translateX(-50%); z-index:30;
+    background:var(--ember); color:#241508; font-size:13px; font-weight:600;
+    padding:9px 16px; border-radius:999px; box-shadow:0 10px 26px rgba(0,0,0,.4);
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .toast.show{ opacity:1; }
+
+  /* chat */
+  .chat-title{ font-size:11px; letter-spacing:.06em; color:var(--ember); margin-bottom:10px; }
+  .chat-box{
+    height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+    padding:4px 2px 8px; margin-bottom:10px; overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .msg{ max-width:82%; padding:9px 12px; border-radius:14px; font-size:13.5px; line-height:1.4; flex-shrink:0; overflow-wrap:anywhere; }
+  .msg.theirs{ align-self:flex-start; background:var(--theirs); border:1px solid var(--card-edge); border-bottom-left-radius:4px; }
+  .msg.mine{ align-self:flex-end; background:var(--mine); border:1px solid var(--accent); border-bottom-right-radius:4px; }
+  .msg b{ display:block; font-size:10px; color:var(--ember); margin-bottom:2px; font-weight:600; }
+  .typing-row{ font-size:11.5px; color:var(--cream-dim); font-style:italic; min-height:16px; margin-bottom:6px; }
+  .chat-compose{ display:flex; gap:8px; }
+  /* 16px inputs stop iOS Safari from zooming the page on focus */
+  .chat-compose input{
+    flex:1; min-width:0; padding:11px 12px; border-radius:12px; border:1px solid var(--card-edge);
+    background:#1a1220; color:var(--cream); font-family:'Manrope',sans-serif; font-size:16px;
+  }
+  .btn{ padding:11px 14px; border-radius:12px; border:none; font-family:'Manrope',sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
+  .btn.send{ background:var(--ember); color:#241508; }
+  .btn.ghost{ background:transparent; border:1px solid var(--card-edge); color:var(--cream-dim); }
+  .btn.full{ width:100%; }
+
+  /* 21 questions */
+  .q-title{ font-size:11px; letter-spacing:.06em; color:var(--rose); margin-bottom:6px; }
+  .q-progress{ font-size:11.5px; color:var(--cream-dim); margin-bottom:12px; }
+  .q-done{ font-size:12.5px; color:var(--cream-dim); opacity:.7; margin-bottom:10px; }
+  .q-done span{ color:var(--accent); }
+  .q-card{
+    background:#1a1220; border:1px solid var(--card-edge); border-radius:14px;
+    padding:16px; margin-bottom:12px;
+  }
+  .q-num{ font-size:11px; color:var(--rose); margin-bottom:6px; }
+  .q-text{ font-family:'Cormorant Garamond', serif; font-size:21px; line-height:1.35; margin-bottom:14px; }
+  .q-answer{ margin-bottom:10px; }
+  .q-answer label{ display:block; font-size:11px; color:var(--cream-dim); margin-bottom:4px; }
+  .q-answer textarea{
+    width:100%; min-height:60px; padding:10px 12px; border-radius:10px; border:1px solid var(--card-edge);
+    background:#140d17; color:var(--cream); font-family:'Manrope',sans-serif; font-size:16px; resize:vertical;
+  }
+  .q-answer textarea:disabled{ opacity:.6; }
+  .q-save{ font-size:11px; color:var(--cream-dim); text-align:right; min-height:14px; margin-top:4px; }
+  .q-controls{ display:flex; gap:8px; margin-top:10px; }
+  .finished{ text-align:center; font-family:'Cormorant Garamond', serif; font-size:20px; color:var(--rose); padding:20px 10px; }
+
+  .hq-add{ display:flex; gap:8px; margin-bottom:14px; }
+  .hq-add input{
+    flex:1; min-width:0; padding:11px 12px; border-radius:12px; border:1px solid var(--card-edge);
+    background:#1a1220; color:var(--cream); font-family:'Manrope',sans-serif; font-size:16px;
+  }
+  .hq-locked{ text-align:center; font-size:12px; color:var(--cream-dim); opacity:.7; margin-bottom:12px; }
+  .hq-empty{ text-align:center; font-size:13px; color:var(--cream-dim); opacity:.7; padding:10px 0; }
+  .hq-card{ background:#1a1220; border:1px solid var(--card-edge); border-radius:14px; padding:14px; margin-bottom:10px; }
+  .hq-text{ font-family:'Cormorant Garamond', serif; font-size:19px; line-height:1.35; margin-bottom:10px; }
+  .hq-text small{ display:block; font-family:'Manrope',sans-serif; font-size:10.5px; color:var(--accent); margin-bottom:4px; letter-spacing:.04em; }
+</style>
+</head>
+<body>
+
+<!-- IDENTITY -->
+<div class="stage" id="idStage">
+  <div class="brand"><div class="kicker">JUST THE TWO OF US</div><h1>Us</h1></div>
+  <div class="panel">
+    <p class="note">Which one are you?</p>
+    <div class="who-grid">
+      <button data-who="Jimnah">Jimnah</button>
+      <button data-who="Dohdoh">Dohdoh</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="stage" id="dashStage" style="display:none;">
+  <div class="brand"><div class="kicker">JUST THE TWO OF US</div><h1>Us</h1></div>
+
+  <div class="hdr">
+    <div class="who">You are <strong id="whoAmI">—</strong></div>
+    <a href="#" id="switchWho">not you?</a>
+  </div>
+  <div class="status" id="syncStatus">Connecting…</div>
+  <div class="presence" id="presenceLine"></div>
+
+  <!-- Live chat -->
+  <div class="panel">
+    <div class="chat-title">LIVE CHAT</div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="typing-row" id="typingRow"></div>
+    <div class="chat-compose">
+      <input type="text" id="chatInput" placeholder="Say something…" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" maxlength="600">
+      <button class="btn send" id="chatSend" type="button">Send</button>
+    </div>
+  </div>
+
+  <!-- Jimnah's 21 Questions -->
+  <div class="panel" id="qPanel">
+    <div class="q-title">JIMNAH'S 21 QUESTIONS</div>
+    <div class="q-progress" id="qProgress"></div>
+    <div class="q-done" id="qDone"><span>✓</span> Q1 — already asked, counts as done.</div>
+    <div id="qActive"></div>
+  </div>
+
+  <!-- Dohdoh's own questions, added freely -->
+  <div class="panel" id="hqPanel">
+    <div class="q-title" style="color:var(--accent);">DOHDOH'S QUESTIONS</div>
+    <div class="hq-add" id="hqAddWrap">
+      <input type="text" id="hqInput" placeholder="Ask him something…" autocomplete="off" enterkeyhint="send" maxlength="300">
+      <button class="btn send" id="hqAddBtn" type="button">Ask</button>
+    </div>
+    <div class="hq-locked" id="hqLocked" style="display:none;">Only Dohdoh can add new questions here — you can still answer below.</div>
+    <div class="hq-empty" id="hqEmpty" style="display:none;"></div>
+    <div id="hqList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =================================================================
+// Separate Firebase path from the game — "usjv" — so nothing here
+// ever touches afterdark/* data or rules.
+//
+// NOTE ON STRUCTURE: everything (constants, state, functions, event
+// handlers) is declared FIRST, and the app is started in one place at
+// the very bottom. Previously enterDash() ran before later `const`/`let`
+// declarations existed, which crashed the script for returning users and
+// left the Send button without a click handler.
+// =================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAKuWlsR6KuDY8NIBu1u-PCcB6GDix-ckc",
+  authDomain: "planner-e932f.firebaseapp.com",
+  databaseURL: "https://planner-e932f-default-rtdb.firebaseio.com",
+  projectId: "planner-e932f",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROOM     = db.ref('usjv/room');          // chat + question progress/answers
+const MSGS     = ROOM.child('messages');
+const TYPING   = ROOM.child('typing');
+const PRESENCE = ROOM.child('presence');       // { deviceId: {name, at} } — who currently has the page open
+const QSTATE   = ROOM.child('questions');      // { current, answers: { idx: {Dohdoh} } }
+const HQ       = ROOM.child('herQuestions');   // { id: {text, at, answer} }
+
+const $ = id => document.getElementById(id);
+
+// localStorage can throw (private mode / blocked storage) — never let that kill the app
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  remove(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+
+let deviceId = store.get('usjv_device');
+if (!deviceId){
+  deviceId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+           : 'd-' + Date.now() + Math.random().toString(36).slice(2);
+  store.set('usjv_device', deviceId);
+}
+
+// =================================================================
+// The 21 questions. Index 0 (Q1) is marked already-sent/done by default.
+// =================================================================
+const QUESTIONS = [
+  "What was your very first impression of me — and how wrong was it? 😂",
+  "What is one thing about me you genuinely missed while we weren't in each other's lives?",
+  "What is something you've always wanted to ask me but never did?",
+  "If you had to describe the version of me you remember in three words, what would they be?",
+  "What's something about yourself you think has changed the most in the past year?",
+  "What's one thing you've learnt about love that you didn't understand when we were together?",
+  "What is your definition of a healthy relationship now?",
+  "What's one thing you think two people can never fake for long?",
+  "If you could relive one completely ordinary day from our time together, which one would you choose?",
+  "What's something about us that you think we got right?",
+  "And what's something you think we got completely wrong?",
+  "Do you believe people can genuinely change, or do they mostly just become better at expressing who they already are?",
+  "What's one thing you would do differently if you were given the chance to rewrite a chapter of your past?",
+  "What makes you feel genuinely safe with someone?",
+  "What's something that immediately makes you lose interest in a person, regardless of how much you initially liked them?",
+  "What's something you find difficult to admit when you actually care about someone?",
+  "Be honest — do you think some people can find their way back to each other after they've both grown, or are some chapters better left closed?",
+  "If two people who once loved each other met again as completely different versions of themselves, do you think they'd owe it to themselves to explore that connection?",
+  "What do you think you understand about me now that you didn't understand when we were together?",
+  "If you could ask me one question and I had to answer it completely honestly, what would you ask?",
+  "And finally… what do you think this conversation is really about? 😅"
+];
+
+// ---------- state ----------
+let myName = store.get('usjv_who');
+if (myName !== 'Jimnah' && myName !== 'Dohdoh') myName = null;
+
+let serverOffset = 0, isConnected = false, everConnected = false;
+let listeners = [];                       // every Firebase listener we attach, so we can detach cleanly
+let presenceCache = {}, presenceReady = false, toastTimer = null;
+let typingCache = {}, lastTypingSent = 0, typingStopTimer = null;
+const chatEls = new Map();                // message key -> DOM node (chat is rendered incrementally)
+let qstate = null, qView = null;          // qView = { idx, ta } — the one live question card
+let hqCache = {};
+const hqEls = new Map();                  // question id -> { card, label, qtext, ta }
+const activeAreas = new Set();            // textareas with autosave, flushed on tab hide / close
+
+const now = () => Date.now() + serverOffset;   // server-corrected clock (devices' clocks can differ)
+
+// ---------- listener bookkeeping ----------
+function listen(ref, event, fn, errFn){
+  ref.on(event, fn, errFn);
+  listeners.push({ ref, event, fn });
+}
+function detachAll(){
+  listeners.forEach(l => { try { l.ref.off(l.event, l.fn); } catch(e){} });
+  listeners = [];
+}
+
+// ---------- shared helpers ----------
+function toast(text){
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3200);
+}
+
+// Debounced autosave for a textarea. The textarea element is created ONCE and
+// lives on — it is never rebuilt when Firebase echoes data back, so focus,
+// cursor and in-progress text are never disturbed.
+function makeAutosave(ta, ref, statusEl){
+  let timer = null;
+  const save = ()=>{
+    timer = null;
+    if (statusEl) statusEl.textContent = 'Saving…';
+    ref.set(ta.value)
+      .then(()=>{ if (statusEl && timer === null) statusEl.textContent = 'Saved ✓'; })
+      .catch(()=>{ if (statusEl) statusEl.textContent = "Couldn't save — check your connection"; });
+  };
+  ta.addEventListener('input', ()=>{
+    clearTimeout(timer);
+    timer = setTimeout(save, 600);
+    if (statusEl) statusEl.textContent = '';
+  });
+  ta._flush = ()=>{ if (timer !== null){ clearTimeout(timer); save(); } };
+  ta._dirty = ()=> timer !== null;
+  ta.addEventListener('blur', ta._flush);
+  activeAreas.add(ta);
+}
+// Apply a value that arrived from Firebase — but never over text the person is
+// actively typing or hasn't finished saving.
+function syncTextarea(ta, remoteVal){
+  if (ta._dirty && ta._dirty()) return;
+  if (document.activeElement === ta) return;
+  if (ta.value !== remoteVal) ta.value = remoteVal;
+}
+function disposeTextarea(ta){
+  if (ta._flush) ta._flush();
+  activeAreas.delete(ta);
+}
+function flushAll(){ activeAreas.forEach(ta => { if (ta._flush) ta._flush(); }); }
+
+// ---------- connection + presence ----------
+function renderStatus(){
+  $('syncStatus').textContent = isConnected
+    ? "Synced live — just the two of you can see this."
+    : (everConnected ? "Connection lost — reconnecting…" : "Connecting…");
+}
+function watchConnection(){
+  listen(db.ref('.info/serverTimeOffset'), 'value', s => { serverOffset = s.val() || 0; });
+  listen(db.ref('.info/connected'), 'value', s => {
+    isConnected = s.val() === true;
+    if (isConnected){
+      everConnected = true;
+      registerPresence();           // re-announce after every reconnect
+    }
+    renderStatus();
+  });
+}
+function registerPresence(){
+  if (!myName) return;
+  const mine = PRESENCE.child(deviceId);
+  mine.onDisconnect().remove();
+  TYPING.child(deviceId).onDisconnect().remove();
+  mine.set({ name: myName, at: now() }).catch(()=>{});
+}
+function otherName(){ return myName === 'Jimnah' ? 'Dohdoh' : 'Jimnah'; }
+function otherOnline(){
+  return Object.entries(presenceCache).some(([id, e]) => id !== deviceId && e && e.name === otherName());
+}
+function renderPresence(){
+  const el = $('presenceLine');
+  if (otherOnline()){
+    el.textContent = `${otherName()} is online right now`;
+    el.className = 'presence online';
+  } else {
+    el.textContent = `${otherName()} isn't online right now`;
+    el.className = 'presence offline';
+  }
+}
+function listenPresence(){
+  listen(PRESENCE, 'value', snap => {
+    const prevOnline = otherOnline();
+    presenceCache = snap.val() || {};
+    const nowOnline = otherOnline();
+    if (presenceReady && !prevOnline && nowOnline){
+      toast(`${otherName()} just joined`);
+    }
+    presenceReady = true;
+    renderPresence();
+  });
+}
+function presenceOff(){
+  TYPING.child(deviceId).remove().catch(()=>{});
+  PRESENCE.child(deviceId).remove().catch(()=>{});
+}
+
+// ---------- chat (incremental: messages are appended, never rebuilt) ----------
+function listenChat(){
+  const q = MSGS.limitToLast(200);
+  listen(q, 'child_added', (snap, prevKey) => addMessage(snap.key, snap.val(), prevKey),
+    () => { $('syncStatus').textContent = "Having trouble connecting — check your internet."; });
+  listen(q, 'child_removed', snap => {
+    const el = chatEls.get(snap.key);
+    if (el){ el.remove(); chatEls.delete(snap.key); }
+  });
+  listen(TYPING, 'value', snap => {
+    typingCache = snap.val() || {};
+    renderTyping();
+  });
+}
+function addMessage(key, m, prevKey){
+  if (!m || typeof m.text !== 'string' || chatEls.has(key)) return;
+  const box = $('chatBox');
+  const wasAtBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+
+  const row = document.createElement('div');
+  row.className = 'msg ' + (m.name === myName ? 'mine' : 'theirs');
+  const b = document.createElement('b'); b.textContent = m.name || '';
+  row.appendChild(b);
+  row.appendChild(document.createTextNode(m.text));
+
+  const prev = prevKey ? chatEls.get(prevKey) : null;
+  if (prev) prev.after(row);
+  else if (!prevKey) box.prepend(row);
+  else box.appendChild(row);
+  chatEls.set(key, row);
+
+  if (wasAtBottom) box.scrollTop = box.scrollHeight;
+}
+function renderTyping(){
+  const t = now();
+  const names = Object.entries(typingCache)
+    .filter(([id, v]) => id !== deviceId && v && v.name && v.name !== myName && v.at && (t - v.at < 5000))
+    .map(([,v]) => v.name);
+  $('typingRow').textContent = names.length ? `${names[0]} is typing…` : '';
+}
+function clearTyping(){
+  lastTypingSent = 0;
+  clearTimeout(typingStopTimer);
+  TYPING.child(deviceId).remove().catch(()=>{});
+}
+function onChatInput(){
+  if (!myName) return;
+  clearTimeout(typingStopTimer);
+  if ($('chatInput').value.trim()){
+    const t = Date.now();
+    if (t - lastTypingSent > 2000){          // throttled: at most one write every 2s, not one per keystroke
+      lastTypingSent = t;
+      TYPING.child(deviceId).set({ name: myName, at: now() }).catch(()=>{});
+    }
+    typingStopTimer = setTimeout(clearTyping, 4000);   // stop "typing…" if they pause
+  } else {
+    clearTyping();
+  }
+}
+function sendMsg(){
+  const input = $('chatInput');
+  const text = input.value.trim();
+  if (!text || !myName) return;
+  input.value = '';
+  clearTyping();
+  MSGS.push({ name: myName, text, at: now() }).catch(()=>{
+    toast("Message didn't send — check your connection");
+    if (!input.value) input.value = text;     // give the text back instead of losing it
+  });
+  const box = $('chatBox');
+  box.scrollTop = box.scrollHeight;
+  input.focus();                              // keep the keyboard open after sending
+}
+
+// ---------- 21 questions ----------
+function listenQuestions(){
+  listen(QSTATE, 'value', snap => {
+    const d = snap.val();
+    qstate = {
+      current: Number.isInteger(d && d.current) ? d.current : 1,   // index into QUESTIONS; 0 already marked done
+      answers: (d && d.answers) || {}
+    };
+    renderQuestions();
+  });
+}
+function renderQuestions(){
+  if (!qstate) return;
+  const total = QUESTIONS.length;
+  const finished = qstate.current >= total;
+  const idx = Math.min(Math.max(qstate.current, 0), total - 1);
+  const box = $('qActive');
+
+  $('qProgress').textContent = finished ? `All ${total} questions done` : `Question ${idx + 1} of ${total}`;
+
+  if (finished){
+    if (qView){ disposeTextarea(qView.ta); qView = null; }
+    box.innerHTML = `<div class="finished">That's all 21. 💛</div>`;
+    return;
+  }
+
+  // Only (re)build the card when the active question actually changes.
+  if (!qView || qView.idx !== idx) buildQuestionCard(idx, box);
+
+  const remote = (qstate.answers[idx] && qstate.answers[idx]['Dohdoh']) || '';
+  syncTextarea(qView.ta, remote);
+}
+function buildQuestionCard(idx, box){
+  if (qView) disposeTextarea(qView.ta);
+  box.innerHTML = '';
+  const total = QUESTIONS.length;
+
+  const card = document.createElement('div');
+  card.className = 'q-card';
+
+  const num = document.createElement('div'); num.className = 'q-num'; num.textContent = `Q${idx+1}`;
+  const text = document.createElement('div'); text.className = 'q-text'; text.textContent = QUESTIONS[idx];
+  card.appendChild(num); card.appendChild(text);
+
+  // These 21 are addressed to Dohdoh ("you"), so only she answers them.
+  const isAnswerer = myName === 'Dohdoh';
+  const wrap = document.createElement('div'); wrap.className = 'q-answer';
+  const label = document.createElement('label'); label.textContent = "Dohdoh's answer";
+  const ta = document.createElement('textarea');
+  ta.placeholder = isAnswerer ? "Type your answer…" : "Waiting for Dohdoh to answer…";
+  ta.disabled = !isAnswerer;
+  const saveEl = document.createElement('div'); saveEl.className = 'q-save';
+  makeAutosave(ta, QSTATE.child(`answers/${idx}/Dohdoh`), isAnswerer ? saveEl : null);
+  wrap.appendChild(label); wrap.appendChild(ta); wrap.appendChild(saveEl);
+  card.appendChild(wrap);
+
+  const controls = document.createElement('div'); controls.className = 'q-controls';
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button';
+  nextBtn.className = 'btn ghost full';
+  nextBtn.textContent = idx + 1 < total ? 'Reveal next question →' : 'Finish';
+  nextBtn.addEventListener('click', ()=>{
+    ta._flush();                                   // make sure the answer is saved first
+    QSTATE.child('current').set(idx + 1);
+  });
+  controls.appendChild(nextBtn);
+  card.appendChild(controls);
+
+  box.appendChild(card);
+  qView = { idx, ta };
+}
+
+// ---------- Dohdoh's own questions ----------
+function listenHerQuestions(){
+  listen(HQ, 'value', snap => {
+    hqCache = snap.val() || {};
+    renderHerQuestions();
+  });
+}
+function buildHqCard(id){
+  const card = document.createElement('div'); card.className = 'hq-card';
+  const textWrap = document.createElement('div'); textWrap.className = 'hq-text';
+  const label = document.createElement('small');
+  const qtext = document.createElement('span');
+  textWrap.appendChild(label); textWrap.appendChild(qtext);
+  card.appendChild(textWrap);
+
+  const isAnswerer = myName === 'Jimnah';
+  const wrap = document.createElement('div'); wrap.className = 'q-answer';
+  const lab = document.createElement('label'); lab.textContent = "Jimnah's answer";
+  const ta = document.createElement('textarea');
+  ta.placeholder = isAnswerer ? "Type your answer…" : "Waiting for Jimnah to answer…";
+  ta.disabled = !isAnswerer;
+  const saveEl = document.createElement('div'); saveEl.className = 'q-save';
+  makeAutosave(ta, HQ.child(id).child('answer'), isAnswerer ? saveEl : null);
+  wrap.appendChild(lab); wrap.appendChild(ta); wrap.appendChild(saveEl);
+  card.appendChild(wrap);
+
+  return { card, label, qtext, ta };
+}
+function renderHerQuestions(){
+  const canAdd = myName === 'Dohdoh';
+  $('hqAddWrap').style.display = canAdd ? 'flex' : 'none';
+  $('hqLocked').style.display = canAdd ? 'none' : 'block';
+
+  const list = $('hqList');
+  const items = Object.entries(hqCache)
+    .filter(([,v]) => v && typeof v.text === 'string')
+    .sort((a,b) => (a[1].at||0) - (b[1].at||0));
+
+  // remove cards for questions that no longer exist
+  const ids = new Set(items.map(([id]) => id));
+  hqEls.forEach((v, id) => {
+    if (!ids.has(id)){ disposeTextarea(v.ta); v.card.remove(); hqEls.delete(id); }
+  });
+
+  const empty = $('hqEmpty');
+  if (!items.length){
+    empty.textContent = canAdd ? "Ask him anything, whenever you want." : "Dohdoh hasn't added a question yet.";
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // add / update cards in place — existing textareas are never recreated
+  items.forEach(([id, q], i) => {
+    let v = hqEls.get(id);
+    if (!v){ v = buildHqCard(id); hqEls.set(id, v); }
+    v.label.textContent = `Q${i+1} — asked by Dohdoh`;
+    v.qtext.textContent = q.text;
+    syncTextarea(v.ta, q.answer || '');
+    const atPos = list.children[i];
+    if (atPos !== v.card) list.insertBefore(v.card, atPos || null);
+  });
+}
+function addHerQuestion(){
+  if (myName !== 'Dohdoh') return;
+  const input = $('hqInput');
+  const text = input.value.trim();
+  if (!text) return;
+  HQ.push({ text, at: now(), answer: '' }).catch(()=> toast("Couldn't add that — check your connection"));
+  input.value = '';
+  input.focus();
+}
+
+// ---------- identity / lifecycle ----------
+function enterDash(){
+  detachAll();                       // never stack duplicate listeners
+  $('idStage').style.display = 'none';
+  $('dashStage').style.display = 'block';
+  $('whoAmI').textContent = myName;
+  renderStatus();
+  watchConnection();
+  listenPresence();
+  listenChat();
+  listenQuestions();
+  listenHerQuestions();
+}
+function leaveDash(){
+  flushAll();
+  presenceOff();
+  detachAll();
+  clearTimeout(typingStopTimer);
+  presenceCache = {}; presenceReady = false; typingCache = {};
+  qstate = null; qView = null; hqCache = {};
+  isConnected = false; everConnected = false;
+  chatEls.clear(); hqEls.clear(); activeAreas.clear();
+  $('chatBox').innerHTML = '';
+  $('qActive').innerHTML = '';
+  $('hqList').innerHTML = '';
+  $('hqEmpty').style.display = 'none';
+  $('typingRow').textContent = '';
+  $('presenceLine').textContent = '';
+}
+
+// ---------- event wiring (all done before the app starts) ----------
+document.querySelectorAll('#idStage [data-who]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    myName = btn.dataset.who;
+    store.set('usjv_who', myName);
+    enterDash();
+  });
+});
+$('switchWho').addEventListener('click', e=>{
+  e.preventDefault();
+  leaveDash();
+  store.remove('usjv_who');
+  myName = null;
+  $('dashStage').style.display = 'none';
+  $('idStage').style.display = 'block';
+});
+
+$('chatInput').addEventListener('input', onChatInput);
+$('chatInput').addEventListener('keydown', e=>{
+  if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); sendMsg(); }
+});
+// keep focus in the input when tapping Send so the keyboard doesn't collapse
+$('chatSend').addEventListener('mousedown', e=> e.preventDefault());
+$('chatSend').addEventListener('click', sendMsg);
+
+$('hqAddBtn').addEventListener('mousedown', e=> e.preventDefault());
+$('hqAddBtn').addEventListener('click', addHerQuestion);
+$('hqInput').addEventListener('keydown', e=>{
+  if (e.key === 'Enter' && !e.isComposing){ e.preventDefault(); addHerQuestion(); }
+});
+
+// don't lose a half-saved answer if the tab is hidden or closed
+document.addEventListener('visibilitychange', ()=>{ if (document.hidden) flushAll(); });
+window.addEventListener('pagehide', flushAll);
+
+// expire stale "is typing…" even if no new Firebase event arrives
+setInterval(renderTyping, 1500);
+
+// ---------- start ----------
+if (myName) enterDash();
+</script>
+</body>
+</html>
