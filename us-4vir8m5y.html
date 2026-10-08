@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Us</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#140d17; --card:#1f1726; --card-edge:#3a2a44;
+    --ember:#d6a564; --rose:#c97aa8; --cream:#f3ece8; --cream-dim:#bcadc0;
+    --mine:#3a2a44; --theirs:#241a2d; --accent:#8e7bd1;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 10% -10%, #2a1d33 0%, transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 0%, #1d1424 0%, transparent 55%),
+      var(--bg);
+    color:var(--cream); font-family:'Manrope', sans-serif;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:28px 14px;
+  }
+  .stage{ width:100%; max-width:480px; }
+  .brand{ text-align:center; margin-bottom:18px; }
+  .brand .kicker{ font-size:12px; color:var(--ember); letter-spacing:.08em; }
+  .brand h1{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:40px; margin:2px 0 0; line-height:1; }
+  .brand h1 em{ font-style:italic; color:var(--rose); }
+  .panel{
+    background:linear-gradient(180deg, var(--card) 0%, #170f1c 100%);
+    border:1px solid var(--card-edge); border-radius:20px;
+    padding:20px 18px; box-shadow:0 30px 60px -25px rgba(0,0,0,.7);
+    margin-bottom:16px;
+  }
+  p.note{ text-align:center; color:var(--cream-dim); font-size:13.5px; margin:0 0 14px; }
+  .who-grid{ display:flex; gap:10px; }
+  .who-grid button{
+    flex:1; padding:16px 8px; border-radius:14px; border:1px solid var(--card-edge);
+    background:#1a1220; color:var(--cream); font-family:'Cormorant Garamond', serif; font-size:20px; cursor:pointer;
+  }
+
+  /* header row inside dashboard */
+  .hdr{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .hdr .who{ font-size:12px; color:var(--cream-dim); }
+  .hdr .who strong{ color:var(--ember); }
+  .hdr a{ color:var(--cream-dim); font-size:11.5px; text-decoration:none; }
+  .status{ text-align:center; font-size:11px; color:var(--cream-dim); opacity:.7; margin-bottom:6px; }
+  .presence{ text-align:center; font-size:12px; margin-bottom:14px; }
+  .presence.online{ color:#8fd6a8; }
+  .presence.offline{ color:var(--cream-dim); opacity:.7; }
+  .toast{
+    position:fixed; left:50%; top:16px; transform:translateX(-50%); z-index:30;
+    background:var(--ember); color:#241508; font-size:13px; font-weight:600;
+    padding:9px 16px; border-radius:999px; box-shadow:0 10px 26px rgba(0,0,0,.4);
+    opacity:0; pointer-events:none; transition:opacity .25s;
+  }
+  .toast.show{ opacity:1; }
+
+  /* chat */
+  .chat-title{ font-size:11px; letter-spacing:.06em; color:var(--ember); margin-bottom:10px; }
+  .chat-box{
+    height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+    padding:4px 2px 8px; margin-bottom:10px;
+  }
+  .msg{ max-width:82%; padding:9px 12px; border-radius:14px; font-size:13.5px; line-height:1.4; }
+  .msg.theirs{ align-self:flex-start; background:var(--theirs); border:1px solid var(--card-edge); border-bottom-left-radius:4px; }
+  .msg.mine{ align-self:flex-end; background:var(--mine); border:1px solid var(--accent); border-bottom-right-radius:4px; }
+  .msg b{ display:block; font-size:10px; color:var(--ember); margin-bottom:2px; font-weight:600; }
+  .typing-row{ font-size:11.5px; color:var(--cream-dim); font-style:italic; min-height:16px; margin-bottom:6px; }
+  .chat-compose{ display:flex; gap:8px; }
+  .chat-compose input{
+    flex:1; padding:11px 12px; border-radius:12px; border:1px solid var(--card-edge);
+    background:#1a1220; color:var(--cream); font-family:'Manrope',sans-serif; font-size:14px;
+  }
+  .btn{ padding:11px 14px; border-radius:12px; border:none; font-family:'Manrope',sans-serif; font-weight:600; font-size:13px; cursor:pointer; }
+  .btn.send{ background:var(--ember); color:#241508; }
+  .btn.ghost{ background:transparent; border:1px solid var(--card-edge); color:var(--cream-dim); }
+  .btn.full{ width:100%; }
+
+  /* 21 questions */
+  .q-title{ font-size:11px; letter-spacing:.06em; color:var(--rose); margin-bottom:6px; }
+  .q-progress{ font-size:11.5px; color:var(--cream-dim); margin-bottom:12px; }
+  .q-done{ font-size:12.5px; color:var(--cream-dim); opacity:.7; margin-bottom:10px; }
+  .q-done span{ color:var(--accent); }
+  .q-card{
+    background:#1a1220; border:1px solid var(--card-edge); border-radius:14px;
+    padding:16px; margin-bottom:12px;
+  }
+  .q-num{ font-size:11px; color:var(--rose); margin-bottom:6px; }
+  .q-text{ font-family:'Cormorant Garamond', serif; font-size:21px; line-height:1.35; margin-bottom:14px; }
+  .q-answer{ margin-bottom:10px; }
+  .q-answer label{ display:block; font-size:11px; color:var(--cream-dim); margin-bottom:4px; }
+  .q-answer textarea{
+    width:100%; min-height:60px; padding:10px 12px; border-radius:10px; border:1px solid var(--card-edge);
+    background:#140d17; color:var(--cream); font-family:'Manrope',sans-serif; font-size:13.5px; resize:vertical;
+  }
+  .q-answer textarea:disabled{ opacity:.6; }
+  .q-save{ font-size:11px; color:var(--cream-dim); text-align:right; }
+  .q-controls{ display:flex; gap:8px; margin-top:10px; }
+  .finished{ text-align:center; font-family:'Cormorant Garamond', serif; font-size:20px; color:var(--rose); padding:20px 10px; }
+
+  .hq-add{ display:flex; gap:8px; margin-bottom:14px; }
+  .hq-add input{
+    flex:1; padding:11px 12px; border-radius:12px; border:1px solid var(--card-edge);
+    background:#1a1220; color:var(--cream); font-family:'Manrope',sans-serif; font-size:13.5px;
+  }
+  .hq-locked{ text-align:center; font-size:12px; color:var(--cream-dim); opacity:.7; margin-bottom:12px; }
+  .hq-empty{ text-align:center; font-size:13px; color:var(--cream-dim); opacity:.7; padding:10px 0; }
+  .hq-card{ background:#1a1220; border:1px solid var(--card-edge); border-radius:14px; padding:14px; margin-bottom:10px; }
+  .hq-text{ font-family:'Cormorant Garamond', serif; font-size:19px; line-height:1.35; margin-bottom:10px; }
+  .hq-text small{ display:block; font-family:'Manrope',sans-serif; font-size:10.5px; color:var(--accent); margin-bottom:4px; letter-spacing:.04em; }
+</style>
+</head>
+<body>
+
+<!-- IDENTITY -->
+<div class="stage" id="idStage">
+  <div class="brand"><div class="kicker">JUST THE TWO OF US</div><h1>Us</h1></div>
+  <div class="panel">
+    <p class="note">Which one are you?</p>
+    <div class="who-grid">
+      <button data-who="Jimnah">Jimnah</button>
+      <button data-who="Dohdoh">Dohdoh</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div class="stage" id="dashStage" style="display:none;">
+  <div class="brand"><div class="kicker">JUST THE TWO OF US</div><h1>Us</h1></div>
+
+  <div class="hdr">
+    <div class="who">You are <strong id="whoAmI">—</strong></div>
+    <a href="#" id="switchWho">not you?</a>
+  </div>
+  <div class="status" id="syncStatus">Connecting…</div>
+  <div class="presence" id="presenceLine"></div>
+
+  <!-- Live chat -->
+  <div class="panel">
+    <div class="chat-title">LIVE CHAT</div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="typing-row" id="typingRow"></div>
+    <div class="chat-compose">
+      <input type="text" id="chatInput" placeholder="Say something…" autocomplete="off" maxlength="600">
+      <button class="btn send" id="chatSend">Send</button>
+    </div>
+  </div>
+
+  <!-- Jimnah's 21 Questions -->
+  <div class="panel" id="qPanel">
+    <div class="q-title">JIMNAH'S 21 QUESTIONS</div>
+    <div class="q-progress" id="qProgress"></div>
+    <div class="q-done" id="qDone"></div>
+    <div id="qActive"></div>
+  </div>
+
+  <!-- Dohdoh's own questions, added freely -->
+  <div class="panel" id="hqPanel">
+    <div class="q-title" style="color:var(--accent);">DOHDOH'S QUESTIONS</div>
+    <div class="hq-add" id="hqAddWrap">
+      <input type="text" id="hqInput" placeholder="Ask him something…" maxlength="300">
+      <button class="btn send" id="hqAddBtn">Ask</button>
+    </div>
+    <div class="hq-locked" id="hqLocked" style="display:none;">Only Dohdoh can add new questions here — you can still answer below.</div>
+    <div id="hqList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// =================================================================
+// Separate Firebase path from the game — "usjv" — so nothing here
+// ever touches afterdark/* data or rules.
+// =================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyAKuWlsR6KuDY8NIBu1u-PCcB6GDix-ckc",
+  authDomain: "planner-e932f.firebaseapp.com",
+  databaseURL: "https://planner-e932f-default-rtdb.firebaseio.com",
+  projectId: "planner-e932f",
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const ROOM = db.ref('usjv/room');          // chat + question progress/answers
+const MSGS = ROOM.child('messages');
+const TYPING = ROOM.child('typing');
+const PRESENCE = ROOM.child('presence');   // { deviceId: {name, at} } — who currently has the page open
+const QSTATE = ROOM.child('questions');    // { current, answers: { idx: {Jimnah, Dohdoh} } }
+
+const $ = id => document.getElementById(id);
+const deviceId = localStorage.getItem('usjv_device') ||
+  (crypto.randomUUID ? crypto.randomUUID() : 'd-' + Date.now() + Math.random().toString(36).slice(2));
+localStorage.setItem('usjv_device', deviceId);
+
+// =================================================================
+// The 21 questions. Index 0 (Q1) is marked already-sent/done by default.
+// =================================================================
+const QUESTIONS = [
+  "What was your very first impression of me — and how wrong was it? 😂",
+  "What is one thing about me you genuinely missed while we weren't in each other's lives?",
+  "What is something you've always wanted to ask me but never did?",
+  "If you had to describe the version of me you remember in three words, what would they be?",
+  "What's something about yourself you think has changed the most in the past year?",
+  "What's one thing you've learnt about love that you didn't understand when we were together?",
+  "What is your definition of a healthy relationship now?",
+  "What's one thing you think two people can never fake for long?",
+  "If you could relive one completely ordinary day from our time together, which one would you choose?",
+  "What's something about us that you think we got right?",
+  "And what's something you think we got completely wrong?",
+  "Do you believe people can genuinely change, or do they mostly just become better at expressing who they already are?",
+  "What's one thing you would do differently if you were given the chance to rewrite a chapter of your past?",
+  "What makes you feel genuinely safe with someone?",
+  "What's something that immediately makes you lose interest in a person, regardless of how much you initially liked them?",
+  "What's something you find difficult to admit when you actually care about someone?",
+  "Be honest — do you think some people can find their way back to each other after they've both grown, or are some chapters better left closed?",
+  "If two people who once loved each other met again as completely different versions of themselves, do you think they'd owe it to themselves to explore that connection?",
+  "What do you think you understand about me now that you didn't understand when we were together?",
+  "If you could ask me one question and I had to answer it completely honestly, what would you ask?",
+  "And finally… what do you think this conversation is really about? 😅"
+];
+
+let myName = localStorage.getItem('usjv_who') || null;
+let qstate = null, msgsCache = {}, typingCache = {}, answerTimers = {};
+
+// ---------- identity ----------
+document.querySelectorAll('#idStage [data-who]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    myName = btn.dataset.who;
+    localStorage.setItem('usjv_who', myName);
+    enterDash();
+  });
+});
+$('switchWho').addEventListener('click', e=>{
+  e.preventDefault();
+  localStorage.removeItem('usjv_who');
+  myName = null;
+  presenceOff();
+  $('dashStage').style.display = 'none';
+  $('idStage').style.display = 'block';
+});
+
+function enterDash(){
+  $('idStage').style.display = 'none';
+  $('dashStage').style.display = 'block';
+  $('whoAmI').textContent = myName;
+  presenceOn();
+  listenChat();
+  listenQuestions();
+  listenHerQuestions();
+}
+if (myName) enterDash();
+
+let presenceCache = {}, presenceReady = false, toastTimer = null;
+
+function presenceOn(){
+  TYPING.child(deviceId).onDisconnect().remove();
+
+  const mine = PRESENCE.child(deviceId);
+  mine.onDisconnect().remove();
+  mine.set({ name: myName, at: Date.now() }).catch(()=>{});
+
+  PRESENCE.on('value', snap=>{
+    const prevOnline = otherOnline();
+    presenceCache = snap.val() || {};
+    const nowOnline = otherOnline();
+    if (presenceReady && !prevOnline && nowOnline){
+      toast(`${otherName()} just joined`);
+    }
+    presenceReady = true;
+    renderPresence();
+  });
+}
+function presenceOff(){
+  TYPING.child(deviceId).remove().catch(()=>{});
+  PRESENCE.child(deviceId).remove().catch(()=>{});
+  PRESENCE.off();
+  presenceCache = {}; presenceReady = false;
+}
+function otherName(){ return myName === 'Jimnah' ? 'Dohdoh' : 'Jimnah'; }
+function otherOnline(){
+  return Object.entries(presenceCache).some(([id, e]) => id !== deviceId && e && e.name === otherName());
+}
+function renderPresence(){
+  const el = $('presenceLine');
+  if (otherOnline()){
+    el.textContent = `${otherName()} is online right now`;
+    el.className = 'presence online';
+  } else {
+    el.textContent = `${otherName()} isn't online right now`;
+    el.className = 'presence offline';
+  }
+}
+function toast(text){
+  const t = $('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3200);
+}
+
+// ---------- chat ----------
+function listenChat(){
+  MSGS.limitToLast(200).on('value', snap=>{
+    msgsCache = snap.val() || {};
+    renderChat();
+    $('syncStatus').textContent = "Synced live — just the two of you can see this.";
+  }, ()=>{ $('syncStatus').textContent = "Having trouble connecting — check your internet."; });
+
+  TYPING.on('value', snap=>{
+    typingCache = snap.val() || {};
+    renderTyping();
+  });
+}
+function renderChat(){
+  const box = $('chatBox');
+  const wasAtBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+  box.innerHTML = '';
+  const items = Object.values(msgsCache).filter(m => m && typeof m.text === 'string').sort((a,b)=>(a.at||0)-(b.at||0));
+  items.forEach(m=>{
+    const row = document.createElement('div');
+    row.className = 'msg ' + (m.name === myName ? 'mine' : 'theirs');
+    const b = document.createElement('b'); b.textContent = m.name;
+    row.appendChild(b);
+    row.appendChild(document.createTextNode(m.text));
+    box.appendChild(row);
+  });
+  if (wasAtBottom || items.length <= 1) box.scrollTop = box.scrollHeight;
+}
+function renderTyping(){
+  const names = Object.entries(typingCache)
+    .filter(([id, v]) => id !== deviceId && v && v.name && v.name !== myName && (!v.at || Date.now() - v.at < 4000))
+    .map(([,v]) => v.name);
+  $('typingRow').textContent = names.length ? `${names[0]} is typing…` : '';
+}
+$('chatInput').addEventListener('input', ()=>{
+  if (!myName) return;
+  if ($('chatInput').value.trim()){
+    TYPING.child(deviceId).set({ name: myName, at: Date.now() }).catch(()=>{});
+  } else {
+    TYPING.child(deviceId).remove().catch(()=>{});
+  }
+});
+function sendMsg(){
+  const text = $('chatInput').value.trim();
+  if (!text || !myName) return;
+  MSGS.push({ name: myName, text, at: Date.now() });
+  $('chatInput').value = '';
+  TYPING.child(deviceId).remove().catch(()=>{});
+}
+$('chatSend').addEventListener('click', sendMsg);
+$('chatInput').addEventListener('keydown', e=>{ if (e.key==='Enter') sendMsg(); });
+
+// ---------- 21 questions ----------
+function listenQuestions(){
+  QSTATE.on('value', snap=>{
+    const d = snap.val();
+    qstate = {
+      current: Number.isInteger(d?.current) ? d.current : 1, // index into QUESTIONS; 0 already marked done
+      answers: d?.answers || {}
+    };
+    renderQuestions();
+  });
+}
+function renderQuestions(){
+  if (!qstate) return;
+  const total = QUESTIONS.length;
+  const current = Math.min(qstate.current, total - 1);
+  $('qProgress').textContent = `Question ${current + 1} of ${total}`;
+  $('qDone').innerHTML = `<span>✓</span> Q1 — already asked, counts as done.`;
+
+  const box = $('qActive');
+  box.innerHTML = '';
+
+  if (qstate.current >= total){
+    box.innerHTML = `<div class="finished">That's all 21. 💛</div>`;
+    return;
+  }
+
+  const idx = current;
+  const ans = qstate.answers[idx] || {};
+  const card = document.createElement('div');
+  card.className = 'q-card';
+
+  const num = document.createElement('div'); num.className = 'q-num'; num.textContent = `Q${idx+1}`;
+  const text = document.createElement('div'); text.className = 'q-text'; text.textContent = QUESTIONS[idx];
+  card.appendChild(num); card.appendChild(text);
+
+  // These 21 are addressed to Dohdoh ("you"), so only she answers them.
+  const wrap = document.createElement('div'); wrap.className = 'q-answer';
+  const label = document.createElement('label'); label.textContent = "Dohdoh's answer";
+  const ta = document.createElement('textarea');
+  ta.placeholder = myName === 'Dohdoh' ? "Type your answer…" : "Waiting for Dohdoh to answer…";
+  ta.value = ans['Dohdoh'] || '';
+  ta.disabled = myName !== 'Dohdoh';
+  ta.addEventListener('input', ()=>{
+    clearTimeout(answerTimers[idx+'Dohdoh']);
+    answerTimers[idx+'Dohdoh'] = setTimeout(()=>{
+      QSTATE.child(`answers/${idx}/Dohdoh`).set(ta.value);
+    }, 500);
+  });
+  wrap.appendChild(label); wrap.appendChild(ta);
+  card.appendChild(wrap);
+
+  const controls = document.createElement('div'); controls.className = 'q-controls';
+  const nextBtn = document.createElement('button');
+  nextBtn.className = 'btn ghost full';
+  nextBtn.textContent = idx + 1 < total ? 'Reveal next question →' : 'Finish';
+  nextBtn.addEventListener('click', ()=>{
+    QSTATE.child('current').set(idx + 1);
+  });
+  controls.appendChild(nextBtn);
+  card.appendChild(controls);
+
+  box.appendChild(card);
+}
+
+// ---------- Dohdoh's own questions ----------
+const HQ = ROOM.child('herQuestions');
+let hqCache = {}, hqAnswerTimers = {};
+
+function listenHerQuestions(){
+  HQ.on('value', snap=>{
+    hqCache = snap.val() || {};
+    renderHerQuestions();
+  });
+}
+function renderHerQuestions(){
+  const canAdd = myName === 'Dohdoh';
+  $('hqAddWrap').style.display = canAdd ? 'flex' : 'none';
+  $('hqLocked').style.display = canAdd ? 'none' : 'block';
+
+  const list = $('hqList');
+  list.innerHTML = '';
+  const items = Object.entries(hqCache)
+    .filter(([,v]) => v && typeof v.text === 'string')
+    .sort((a,b) => (a[1].at||0) - (b[1].at||0));
+
+  if (!items.length){
+    list.innerHTML = `<div class="hq-empty">${canAdd ? "Ask him anything, whenever you want." : "Dohdoh hasn't added a question yet."}</div>`;
+    return;
+  }
+
+  items.forEach(([id, q], i)=>{
+    const card = document.createElement('div'); card.className = 'hq-card';
+    const text = document.createElement('div'); text.className = 'hq-text';
+    text.innerHTML = `<small>Q${i+1} — asked by Dohdoh</small>`;
+    text.appendChild(document.createTextNode(q.text));
+    card.appendChild(text);
+
+    const wrap = document.createElement('div'); wrap.className = 'q-answer';
+    const label = document.createElement('label'); label.textContent = "Jimnah's answer";
+    const ta = document.createElement('textarea');
+    ta.placeholder = myName === 'Jimnah' ? "Type your answer…" : "Waiting for Jimnah to answer…";
+    ta.value = q.answer || '';
+    ta.disabled = myName !== 'Jimnah';
+    ta.addEventListener('input', ()=>{
+      clearTimeout(hqAnswerTimers[id]);
+      hqAnswerTimers[id] = setTimeout(()=>{ HQ.child(id).child('answer').set(ta.value); }, 500);
+    });
+    wrap.appendChild(label); wrap.appendChild(ta);
+    card.appendChild(wrap);
+    list.appendChild(card);
+  });
+}
+function addHerQuestion(){
+  if (myName !== 'Dohdoh') return;
+  const text = $('hqInput').value.trim();
+  if (!text) return;
+  HQ.push({ text, at: Date.now(), answer: '' });
+  $('hqInput').value = '';
+}
+$('hqAddBtn').addEventListener('click', addHerQuestion);
+$('hqInput').addEventListener('keydown', e=>{ if (e.key==='Enter') addHerQuestion(); });
+</script>
+</body>
+</html>
