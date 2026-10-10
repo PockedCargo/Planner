@@ -1,0 +1,1474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Us</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#140d17">
+<link rel="icon" href="icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.1/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#140d17;--card:#1f1726;--card-edge:#3a2a44;
+  --ember:#d6a564;--rose:#c97aa8;--cream:#f3ece8;--cream-dim:#bcadc0;
+  --mine:#3a2a44;--theirs:#241a2d;--accent:#8e7bd1;--danger:#d66f78;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;min-height:100vh;background:var(--bg);color:var(--cream);
+  font-family:'Manrope',sans-serif;display:flex;align-items:flex-start;
+  justify-content:center;padding:28px 14px;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 900px 500px at 10% -10%,#2a1d33 0%,transparent 60%),
+             radial-gradient(ellipse 700px 500px at 100% 0%,#1d1424 0%,transparent 55%),var(--bg);
+}
+button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.stage{width:100%;max-width:560px}
+.brand{text-align:center;margin-bottom:18px}
+.brand .kicker{font-size:12px;color:var(--ember);letter-spacing:.08em}
+.brand h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:40px;margin:2px 0 0;line-height:1}
+.brand h1 em{font-style:italic;color:var(--rose)}
+.panel{
+  background:linear-gradient(180deg,var(--card) 0%,#170f1c 100%);
+  border:1px solid var(--card-edge);border-radius:20px;padding:20px 18px;
+  box-shadow:0 30px 60px -25px rgba(0,0,0,.7);margin-bottom:16px;
+}
+p.note{text-align:center;color:var(--cream-dim);font-size:13.5px;margin:0 0 14px}
+.who-grid{display:flex;gap:10px}
+.who-grid button{
+  flex:1;padding:16px 8px;border-radius:14px;border:1px solid var(--card-edge);
+  background:#1a1220;color:var(--cream);font-family:'Cormorant Garamond',serif;
+  font-size:20px;cursor:pointer
+}
+.hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.hdr .who{font-size:12px;color:var(--cream-dim)}
+.hdr .who strong{color:var(--ember)}
+.hdr a{color:var(--cream-dim);font-size:11.5px;text-decoration:none}
+.status{text-align:center;font-size:11px;color:var(--cream-dim);opacity:.7;margin-bottom:6px}
+.presence{text-align:center;font-size:12px;margin-bottom:14px;min-height:16px}
+.presence.online{color:#8fd6a8}.presence.offline{color:var(--cream-dim);opacity:.7}
+.toast{
+  position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:30;
+  background:var(--ember);color:#241508;font-size:13px;font-weight:600;
+  padding:9px 16px;border-radius:999px;box-shadow:0 10px 26px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;transition:opacity .25s
+}
+.toast.show{opacity:1}
+
+/* AUTH */
+.auth-overlay{position:fixed;inset:0;z-index:50;background:rgba(12,7,14,.96);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.auth-card{width:min(430px,100%);background:linear-gradient(180deg,var(--card) 0%,#170f1c 100%);border:1px solid var(--card-edge);border-radius:22px;padding:24px 20px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.auth-card h2{font-family:'Cormorant Garamond',serif;font-size:32px;text-align:center;margin:0 0 4px}
+.auth-card .auth-sub{text-align:center;color:var(--cream-dim);font-size:12px;margin:0 0 18px}
+.auth-card label{display:block;font-size:11px;color:var(--cream-dim);margin:10px 0 5px}
+.auth-card input{width:100%;padding:12px;border-radius:11px;border:1px solid var(--card-edge);background:#140d17;color:var(--cream);font-family:'Manrope',sans-serif;font-size:16px}
+.auth-error{min-height:18px;color:#e99ba1;font-size:11px;text-align:center;margin:10px 0}
+.auth-help{text-align:center;color:var(--cream-dim);font-size:10px;line-height:1.5;margin-top:12px}
+.auth-actions{display:flex;gap:8px;margin-top:14px}
+.auth-actions .btn{flex:1}
+.auth-overlay.hidden{display:none}
+/* CHAT */
+.chat-title,.q-title{font-size:11px;letter-spacing:.06em;color:var(--ember);margin-bottom:10px}
+.chat-box{
+  height:330px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;
+  padding:4px 2px 8px;margin-bottom:10px;overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch
+}
+.msg{max-width:86%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.4;
+  flex-shrink:0;overflow-wrap:anywhere;position:relative}
+.msg.theirs{align-self:flex-start;background:var(--theirs);border:1px solid var(--card-edge);border-bottom-left-radius:4px}
+.msg.mine{align-self:flex-end;background:var(--mine);border:1px solid var(--accent);border-bottom-right-radius:4px}
+.msg.system{align-self:center;max-width:90%;background:transparent;border:1px dashed var(--card-edge);
+  color:var(--cream-dim);font-size:12px;text-align:center;padding:6px 12px}
+.msg b{display:block;font-size:10px;color:var(--ember);margin-bottom:2px;font-weight:600}
+.msg-time{font-size:9px;color:var(--cream-dim);opacity:.65;margin-top:5px}
+.reply-quote{
+  border-left:3px solid var(--accent);background:rgba(142,123,209,.10);
+  padding:6px 8px;margin:0 0 7px;border-radius:5px;font-size:11px;color:var(--cream-dim)
+}
+.reply-quote strong{display:block;color:var(--accent);font-size:10px;margin-bottom:2px}
+.msg-actions{display:flex;align-items:center;gap:9px;margin-top:6px}
+.reply-btn{
+  border:0;background:transparent;color:var(--cream-dim);font-size:10px;
+  padding:2px 0;cursor:pointer;text-decoration:underline
+}
+.react-btn{
+  border:0;background:transparent;color:var(--cream-dim);font-size:12px;
+  padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:3px;line-height:1
+}
+.react-btn.active{color:var(--rose)}
+.react-btn .count{font-size:9.5px;color:var(--cream-dim)}
+.msg-ticks{font-size:10px;letter-spacing:-2px;margin-left:3px;color:var(--cream-dim)}
+.msg-ticks.read{color:#7fd6c4;letter-spacing:-1px}
+.msg-time-row{display:flex;align-items:center;justify-content:flex-end;gap:2px}
+.typing-row{font-size:11.5px;color:var(--cream-dim);font-style:italic;min-height:16px;margin-bottom:6px}
+.chat-replying{
+  display:none;align-items:center;justify-content:space-between;gap:8px;
+  background:#17101d;border:1px solid var(--accent);border-radius:10px;
+  padding:7px 10px;margin-bottom:7px;font-size:11px;color:var(--cream-dim)
+}
+.chat-replying.show{display:flex}
+.chat-replying-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-replying button{background:none;border:0;color:var(--rose);cursor:pointer}
+.chat-compose{display:flex;gap:8px;align-items:flex-end}
+.chat-compose textarea{
+  flex:1;min-width:0;min-height:44px;max-height:140px;resize:vertical;
+  padding:11px 12px;border-radius:12px;border:1px solid var(--card-edge);
+  background:#1a1220;color:var(--cream);font-family:'Manrope',sans-serif;font-size:16px
+}
+.btn{padding:11px 14px;border-radius:12px;border:none;font-family:'Manrope',sans-serif;
+  font-weight:600;font-size:13px;cursor:pointer}
+.btn.send{background:var(--ember);color:#241508}
+.btn.ghost{background:transparent;border:1px solid var(--card-edge);color:var(--cream-dim)}
+.btn.danger{background:transparent;border:1px solid var(--danger);color:#e99ba1}
+.btn.full{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+
+/* MEDIA */
+.media-tools{display:flex;align-items:center;gap:4px;margin:0 0 6px}
+.icon-tool{
+  width:34px;height:34px;flex-shrink:0;border-radius:10px;border:1px solid transparent;
+  background:transparent;color:var(--cream-dim);font-size:17px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center
+}
+.icon-tool:hover{border-color:var(--card-edge);color:var(--cream);background:#1a1220}
+.icon-tool.recording{border-color:#e36d78;color:#f39aa0;animation:pulseRec 1.2s infinite}
+.icon-tool.active{border-color:var(--accent);color:var(--accent)}
+@keyframes pulseRec{50%{opacity:.55}}
+#mediaInput,#cameraInput{display:none}
+
+/* Emoji + GIF pickers */
+.picker-panel{
+  display:none;background:#17101d;border:1px solid var(--card-edge);border-radius:12px;
+  padding:9px;margin-bottom:7px;max-height:220px;overflow-y:auto
+}
+.picker-panel.show{display:block}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.emoji-grid button{
+  background:transparent;border:0;font-size:19px;padding:5px 0;border-radius:6px;cursor:pointer
+}
+.emoji-grid button:hover{background:#241a2d}
+.gif-search{display:flex;gap:6px;margin-bottom:8px}
+.gif-search input{
+  flex:1;padding:8px 10px;border-radius:9px;border:1px solid var(--card-edge);
+  background:#1a1220;color:var(--cream);font-size:13px
+}
+.gif-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.gif-grid img{width:100%;border-radius:8px;cursor:pointer;display:block}
+.gif-note{font-size:10.5px;color:var(--cream-dim);opacity:.75;text-align:center;padding:10px 4px}
+.chat-head-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.mute-btn{background:transparent;border:0;color:var(--cream-dim);font-size:16px;cursor:pointer}
+.mute-btn.muted{opacity:.5}
+.media-preview{display:none;gap:7px;flex-wrap:wrap;margin:7px 0}
+.media-preview.show{display:flex}
+.media-chip{
+  display:flex;align-items:center;gap:7px;max-width:100%;
+  border:1px solid var(--card-edge);background:#1a1220;border-radius:10px;padding:7px 9px;
+  font-size:10px;color:var(--cream-dim)
+}
+.media-chip span{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.media-chip button{background:none;border:0;color:var(--rose);cursor:pointer;font-size:12px}
+.msg-media{margin-top:7px}
+.msg-media img,.msg-media video{
+  display:block;max-width:100%;max-height:280px;border-radius:10px;background:#0d0910
+}
+.msg-media audio{display:block;width:min(100%,300px)}
+.media-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px}
+.media-actions a,.media-actions button{
+  color:var(--cream-dim);background:none;border:0;padding:0;font-size:10px;
+  text-decoration:underline;cursor:pointer
+}
+.media-actions a:hover,.media-actions button:hover{color:var(--cream)}
+.voice-note{display:flex;align-items:center;gap:9px}
+.voice-note .voice-icon{font-size:19px}
+.chat-compose-wrap{display:flex;flex-direction:column}
+
+/* QUESTIONS */
+.q-toolbar{display:flex;gap:8px;margin-bottom:12px}
+.q-progress{font-size:11.5px;color:var(--cream-dim);margin-bottom:12px}
+.q-card{
+  background:#1a1220;border:1px solid var(--card-edge);border-radius:14px;
+  padding:15px;margin-bottom:10px
+}
+.q-card.current{border-color:var(--rose);box-shadow:0 0 0 1px rgba(201,122,168,.15)}
+.q-card.done{border-color:#51405b}
+.q-num{font-size:11px;color:var(--rose);margin-bottom:6px}
+.q-text{font-family:'Cormorant Garamond',serif;font-size:20px;line-height:1.35;margin-bottom:12px}
+.q-meta{font-size:10px;color:var(--cream-dim);margin-bottom:8px}
+.q-answer{margin-bottom:8px}
+.q-answer label{display:block;font-size:11px;color:var(--cream-dim);margin-bottom:4px}
+.q-answer textarea{
+  width:100%;min-height:68px;padding:10px 12px;border-radius:10px;border:1px solid var(--card-edge);
+  background:#140d17;color:var(--cream);font-family:'Manrope',sans-serif;font-size:16px;resize:vertical
+}
+.q-answer textarea:disabled{opacity:.6}
+.q-save{font-size:11px;color:var(--cream-dim);text-align:right;min-height:14px;margin-top:4px}
+.q-controls{display:flex;gap:8px;margin-top:9px}
+.q-status{font-size:11px;color:#8fd6a8;margin-top:7px}
+.finished{text-align:center;font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--rose);padding:15px 10px}
+.question-reply{
+  margin-top:9px;border-top:1px solid var(--card-edge);padding-top:8px;
+  display:flex;justify-content:flex-end
+}
+.question-reply button{background:transparent;border:0;color:var(--accent);font-size:11px;cursor:pointer}
+
+/* DOHDOH QUESTIONS */
+.hq-add{display:flex;gap:8px;margin-bottom:14px}
+.hq-add input{
+  flex:1;min-width:0;padding:11px 12px;border-radius:12px;border:1px solid var(--card-edge);
+  background:#1a1220;color:var(--cream);font-family:'Manrope',sans-serif;font-size:16px
+}
+.hq-locked{text-align:center;font-size:12px;color:var(--cream-dim);opacity:.7;margin-bottom:12px}
+.hq-empty{text-align:center;font-size:13px;color:var(--cream-dim);opacity:.7;padding:10px 0}
+.hq-card{background:#1a1220;border:1px solid var(--card-edge);border-radius:14px;padding:14px;margin-bottom:10px}
+.hq-text{font-family:'Cormorant Garamond',serif;font-size:19px;line-height:1.35;margin-bottom:10px}
+.hq-text small{display:block;font-family:'Manrope',sans-serif;font-size:10.5px;color:var(--accent);margin-bottom:4px;letter-spacing:.04em}
+
+.q-history{display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
+#hqList{display:flex;flex-direction:column;max-height:420px;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-right:2px}
+.qh-item{background:#1a1220;border:1px solid var(--card-edge);border-radius:12px;padding:12px 13px;margin-bottom:9px}
+.qh-item .qh-num{font-size:10.5px;color:var(--rose);margin-bottom:5px}
+.qh-item .qh-q{font-family:'Cormorant Garamond',serif;font-size:16.5px;line-height:1.3;margin-bottom:7px}
+.qh-item .qh-a{font-size:12.5px;color:var(--cream-dim);background:#140d17;border-radius:8px;padding:8px 10px;white-space:pre-wrap}
+.qh-item .qh-a.empty{font-style:italic;opacity:.6}
+.qh-empty-note{text-align:center;font-size:12.5px;color:var(--cream-dim);opacity:.7;padding:10px 0}
+</style>
+</head>
+<body>
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-card">
+    <div class="brand" style="margin-bottom:8px;"><div class="kicker">PRIVATE ROOM</div><h1>Us</h1></div>
+    <h2>Sign in</h2>
+    <p class="auth-sub">Authentication is required before the chat, questions, and media can be accessed.</p>
+    <label for="authEmail">Email</label>
+    <input id="authEmail" type="email" autocomplete="username" placeholder="Your Firebase account email">
+    <label for="authPassword">Password</label>
+    <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password">
+    <div class="auth-error" id="authError"></div>
+    <div class="auth-actions">
+      <button class="btn send" id="authLogin" type="button">Sign in</button>
+      <button class="btn ghost" id="authLogout" type="button" style="display:none;">Sign out</button>
+    </div>
+    <div class="auth-help">Create the same two authorized accounts in Firebase Authentication and Supabase Authentication. This page does not expose public account creation.</div>
+  </div>
+</div>
+
+
+<div class="stage" id="idStage" style="display:none;">
+  <div class="brand"><div class="kicker">JUST THE TWO OF US</div><h1>Us</h1></div>
+  <div class="panel">
+    <p class="note">Which one are you?</p>
+    <div class="who-grid">
+      <button data-who="Jimnah">Jimnah</button>
+      <button data-who="Vivian">Vivian <span style="font-size:.65em;font-style:italic;opacity:.75;">(dohdoh)</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="stage" id="dashStage" style="display:none;">
+  <div class="brand"><div class="kicker">JUST THE TWO OF US</div><h1>Us</h1></div>
+
+  <div class="hdr">
+    <div class="who">You are <strong id="whoAmI">—</strong></div>
+    <a href="#" id="switchWho">not you?</a>
+  </div>
+  <div class="status" id="syncStatus">Connecting…</div>
+  <div class="presence" id="presenceLine"></div>
+
+  <div class="panel">
+    <div class="chat-head-row">
+      <div class="chat-title" style="margin:0;">LIVE CHAT</div>
+      <button class="mute-btn" id="muteBtn" type="button" title="Mute notification sound">🔔</button>
+    </div>
+    <div class="chat-box" id="chatBox"></div>
+    <div class="typing-row" id="typingRow"></div>
+
+    <div class="chat-replying" id="chatReplying">
+      <div class="chat-replying-text" id="chatReplyingText"></div>
+      <button type="button" id="cancelReply">Cancel</button>
+    </div>
+
+    <div class="picker-panel" id="emojiPanel">
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <div class="picker-panel" id="gifPanel">
+      <div class="gif-search">
+        <input type="text" id="gifSearchInput" placeholder="Search GIFs…" autocomplete="off">
+        <button class="btn ghost" id="gifSearchBtn" type="button">Search</button>
+      </div>
+      <div class="gif-grid" id="gifGrid"></div>
+    </div>
+
+    <div class="chat-compose-wrap">
+      <div class="media-tools">
+        <button class="icon-tool" id="emojiToggle" type="button" title="Emoji">😊</button>
+        <button class="icon-tool" id="cameraChoose" type="button" title="Camera">📷</button>
+        <button class="icon-tool" id="galleryChoose" type="button" title="Photo / Video from gallery">🖼️</button>
+        <button class="icon-tool" id="gifToggle" type="button" title="GIF">GIF</button>
+        <button class="icon-tool" id="mediaChoose" type="button" title="Attach a file">📎</button>
+        <button class="icon-tool" id="voiceRecord" type="button" title="Voice note">🎙️</button>
+        <input id="mediaInput" type="file" multiple accept="*/*">
+        <input id="cameraInput" type="file" accept="image/*,video/*" capture="environment">
+        <input id="galleryInput" type="file" multiple accept="image/*,video/*">
+      </div>
+      <div class="media-preview" id="mediaPreview"></div>
+      <div class="chat-compose">
+        <textarea id="chatInput" placeholder="Write a message…" autocomplete="off"
+          autocapitalize="sentences" maxlength="2000" rows="2"></textarea>
+        <button class="btn send" id="chatSend" type="button">➤</button>
+      </div>
+    </div>
+    <div style="font-size:10px;color:var(--cream-dim);margin-top:6px;">
+      Enter = send · Shift + Enter = new line · Tap a message to reply or react · Paste an image directly into the box
+    </div>
+  </div>
+
+  <div class="panel" id="qPanel">
+    <div class="q-title">JIMNAH'S 21 QUESTIONS</div>
+    <div class="q-toolbar">
+      <button class="btn ghost" id="resetQuestions" type="button">Reset Questions</button>
+    </div>
+    <div class="q-progress" id="qProgress"></div>
+    <div id="qCurrentWrap"></div>
+    <button class="btn ghost full" id="toggleHistoryBtn" type="button" style="margin-top:4px;">View previous questions &amp; answers</button>
+    <div class="q-history" id="qHistory" style="display:none;margin-top:12px;"></div>
+  </div>
+
+  <div class="panel" id="hqPanel">
+    <div class="q-title" style="color:var(--accent);">VIVIAN <span style="font-size:.85em;font-style:italic;opacity:.75;">(dohdoh)</span>'S QUESTIONS</div>
+    <div class="hq-add" id="hqAddWrap">
+      <input type="text" id="hqInput" placeholder="Ask him something…" autocomplete="off" maxlength="500">
+      <button class="btn send" id="hqAddBtn" type="button">Ask</button>
+    </div>
+    <div class="hq-locked" id="hqLocked" style="display:none;">
+      Only Vivian (dohdoh) can add new questions here — you can still answer below.
+    </div>
+    <div class="hq-empty" id="hqEmpty" style="display:none;"></div>
+    <div id="hqList"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const firebaseConfig={
+  apiKey:"AIzaSyAKuWlsR6KuDY8NIBu1u-PCcB6GDix-ckc",
+  authDomain:"planner-e932f.firebaseapp.com",
+  databaseURL:"https://planner-e932f-default-rtdb.firebaseio.com",
+  projectId:"planner-e932f"
+};
+
+// Supabase Storage (free-plan media storage). Replace the two placeholders with
+// the Project URL and anon/public key from Supabase -> Project Settings -> API.
+const SUPABASE_URL="https://tosycdfvztjwufshbejj.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_E4aEvHuCYD31E1z_y_nOsw__lyyl-bh";
+const SUPABASE_BUCKET="usjv-media";
+const supabaseClient=(window.supabase&&SUPABASE_URL.startsWith('https://')&&SUPABASE_ANON_KEY!=='YOUR_SUPABASE_ANON_KEY')
+  ? window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY):null;
+function supabaseConfigured(){return !!supabaseClient;}
+async function requireSupabaseUser(){
+  if(!supabaseClient)throw new Error('Supabase Storage is not configured.');
+  const {data,error}=await supabaseClient.auth.getUser();
+  if(error||!data.user)throw new Error('Supabase authentication is required for media.');
+  supabaseUser=data.user;
+  return supabaseUser;
+}
+
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.database();
+let firebaseUser=null;
+let supabaseUser=null;
+let authReady=false;
+let supabaseAuthReady=false;
+const ROOM=db.ref('usjv/room');
+const MSGS=ROOM.child('messages');
+const TYPING=ROOM.child('typing');
+const PRESENCE=ROOM.child('presence');
+const QSTATE=ROOM.child('questions');
+const HQ=ROOM.child('herQuestions');
+
+const $=id=>document.getElementById(id);
+const store={
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+  remove(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+
+let deviceId=store.get('usjv_device');
+if(!deviceId){
+  deviceId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():
+    'd-'+Date.now()+Math.random().toString(36).slice(2);
+  store.set('usjv_device',deviceId);
+}
+
+const QUESTIONS=[
+"What was your very first impression of me — and how wrong was it? 😂",
+"What is one thing about me you genuinely missed while we weren't in each other's lives?",
+"What is something you've always wanted to ask me but never did?",
+"If you had to describe the version of me you remember in three words, what would they be?",
+"What's something about yourself you think has changed the most in the past year?",
+"What's one thing you've learnt about love that you didn't understand when we were together?",
+"What is your definition of a healthy relationship now?",
+"What's one thing you think two people can never fake for long?",
+"If you could relive one completely ordinary day from our time together, which one would you choose?",
+"What's something about us that you think we got right?",
+"And what's something you think we got completely wrong?",
+"Do you believe people can genuinely change, or do they mostly just become better at expressing who they already are?",
+"What's one thing you would do differently if you were given the chance to rewrite a chapter of your past?",
+"What makes you feel genuinely safe with someone?",
+"What's something that immediately makes you lose interest in a person, regardless of how much you initially liked them?",
+"What's something you find difficult to admit when you actually care about someone?",
+"Be honest — do you think some people can find their way back to each other after they've both grown, or are some chapters better left closed?",
+"If two people who once loved each other met again as completely different versions of themselves, do you think they'd owe it to themselves to explore that connection?",
+"What do you think you understand about me now that you didn't understand when we were together?",
+"If you could ask me one question and I had to answer it completely honestly, what would you ask?",
+"And finally… what do you think this conversation is really about? 😅"
+];
+
+let myName=store.get('usjv_who');
+if(myName!=='Jimnah'&&myName!=='Vivian')myName=null;
+
+let serverOffset=0,isConnected=false,everConnected=false;
+let listeners=[];
+let presenceCache={},presenceReady=false,toastTimer=null;
+let typingCache={},lastTypingSent=0,typingStopTimer=null;
+let chatEls=new Map(),chatReady=false;
+let qstate=null,hqCache={},hqEls=new Map();
+let activeAreas=new Set();
+let replyingTo=null;
+let selectedMedia=[];
+let mediaUploading=false;
+let mediaRecorder=null;
+let mediaStream=null;
+let voiceChunks=[];
+let voiceMime='';
+
+const now=()=>Date.now()+serverOffset;
+
+function listen(ref,event,fn,errFn){
+  ref.on(event,fn,errFn);
+  listeners.push({ref,event,fn});
+}
+function detachAll(){
+  listeners.forEach(l=>{try{l.ref.off(l.event,l.fn)}catch(e){}});
+  listeners=[];
+}
+function toast(text){
+  const t=$('toast');t.textContent=text;t.classList.add('show');
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+function makeAutosave(ta,ref,statusEl){
+  let timer=null;
+  const save=()=>{
+    timer=null;
+    if(statusEl)statusEl.textContent='Saving…';
+    ref.set(ta.value)
+      .then(()=>{if(statusEl&&timer===null)statusEl.textContent='Saved ✓'})
+      .catch(()=>{if(statusEl)statusEl.textContent="Couldn't save — check your connection"});
+  };
+  ta.addEventListener('input',()=>{
+    clearTimeout(timer);timer=setTimeout(save,600);
+    if(statusEl)statusEl.textContent='';
+  });
+  ta._flush=()=>{if(timer!==null){clearTimeout(timer);save()}};
+  ta._dirty=()=>timer!==null;
+  ta.addEventListener('blur',ta._flush);
+  activeAreas.add(ta);
+}
+function syncTextarea(ta,val){
+  if(ta._dirty&&ta._dirty())return;
+  if(document.activeElement===ta)return;
+  if(ta.value!==val)ta.value=val;
+}
+function disposeTextarea(ta){
+  if(!ta)return;
+  if(ta._flush)ta._flush();
+  activeAreas.delete(ta);
+}
+function flushAll(){activeAreas.forEach(ta=>{if(ta._flush)ta._flush()})}
+
+function renderStatus(){
+  $('syncStatus').textContent=isConnected?
+    "Synced live — just the two of you can see this.":
+    (everConnected?"Connection lost — reconnecting…":"Connecting…");
+}
+function watchConnection(){
+  listen(db.ref('.info/serverTimeOffset'),'value',s=>{serverOffset=s.val()||0});
+  listen(db.ref('.info/connected'),'value',s=>{
+    isConnected=s.val()===true;
+    if(isConnected){everConnected=true;registerPresence()}
+    renderStatus();
+  });
+}
+function registerPresence(){
+  if(!myName)return;
+  const mine=PRESENCE.child(deviceId);
+  mine.onDisconnect().remove();
+  TYPING.child(deviceId).onDisconnect().remove();
+  mine.set({name:myName,at:now()}).catch(()=>{});
+}
+function otherName(){return myName==='Jimnah'?'Vivian':'Jimnah'}
+function otherOnline(){
+  return Object.entries(presenceCache).some(([id,e])=>id!==deviceId&&e&&e.name===otherName());
+}
+function renderPresence(){
+  const el=$('presenceLine');
+  if(otherOnline()){el.textContent=`${otherName()} is online right now`;el.className='presence online'}
+  else{el.textContent=`${otherName()} isn't online right now`;el.className='presence offline'}
+}
+function listenPresence(){
+  listen(PRESENCE,'value',snap=>{
+    const before=otherOnline();presenceCache=snap.val()||{};
+    const after=otherOnline();
+    if(presenceReady&&!before&&after)toast(`${otherName()} just joined`);
+    presenceReady=true;renderPresence();
+  });
+}
+function presenceOff(){
+  TYPING.child(deviceId).remove().catch(()=>{});
+  PRESENCE.child(deviceId).remove().catch(()=>{});
+}
+
+
+/* ---------------- MEDIA: FILES, VOICE NOTES, DOWNLOAD + REUSE ---------------- */
+const MAX_MEDIA_MB=25;
+const MAX_MEDIA_BYTES=MAX_MEDIA_MB*1024*1024;
+const MEDIA_TYPES=/^.+\/.+$/;
+
+function mediaKind(file){
+  if(!file)return 'file';
+  if(file.type==='image/gif'||file.name.toLowerCase().endsWith('.gif'))return 'gif';
+  if(file.type.startsWith('image/'))return 'image';
+  if(file.type.startsWith('video/'))return 'video';
+  if(file.type.startsWith('audio/'))return 'audio';
+  return 'file';
+}
+function fileIcon(kind){
+  return kind==='image'||kind==='gif'?'🖼':kind==='video'?'🎬':kind==='audio'?'🎵':'📎';
+}
+function addSelectedFiles(files){
+  [...files].forEach(file=>{
+    if(!file)return;
+    if(file.size>MAX_MEDIA_BYTES){toast(`${file.name} is over ${MAX_MEDIA_MB} MB`);return}
+    if(!MEDIA_TYPES.test(file.type)&&!file.name.toLowerCase().endsWith('.gif')){
+      toast(`${file.name}: unsupported file type`);return
+    }
+    selectedMedia.push(file);
+  });
+  renderMediaPreview();
+}
+function renderMediaPreview(){
+  const wrap=$('mediaPreview');wrap.innerHTML='';
+  if(!selectedMedia.length){wrap.classList.remove('show');return}
+  wrap.classList.add('show');
+  selectedMedia.forEach((file,i)=>{
+    const chip=document.createElement('div');chip.className='media-chip';
+    const icon=document.createElement('span');icon.textContent=fileIcon(mediaKind(file));
+    const name=document.createElement('span');name.textContent=`${file.name} · ${(file.size/1024/1024).toFixed(1)} MB`;
+    const remove=document.createElement('button');remove.type='button';remove.textContent='×';
+    remove.title='Remove attachment';remove.addEventListener('click',()=>{selectedMedia.splice(i,1);renderMediaPreview()});
+    chip.append(icon,name,remove);wrap.appendChild(chip);
+  });
+}
+function storagePathFor(file){
+  const safe=file.name.replace(/[^\w.\-]+/g,'_').slice(-120);
+  const uid=supabaseUser&&supabaseUser.id;
+  if(!uid)throw new Error('Supabase authentication is required for media.');
+  return `${uid}/${Date.now()}_${Math.random().toString(36).slice(2,9)}_${safe}`;
+}
+async function uploadMedia(file){
+  if(!supabaseClient)throw new Error('Supabase Storage is not configured.');
+  const path=storagePathFor(file);
+  const {error}=await supabaseClient.storage.from(SUPABASE_BUCKET).upload(path,file,{
+    contentType:file.type||'application/octet-stream',upsert:false
+  });
+  if(error)throw error;
+  return {
+    name:file.name,type:file.type||'application/octet-stream',kind:mediaKind(file),
+    size:file.size,storagePath:path
+  };
+}
+async function getMediaUrl(m){
+  if(m&&m.url)return m.url;
+  if(!m||!m.storagePath||!supabaseClient)return null;
+  const {data,error}=await supabaseClient.storage.from(SUPABASE_BUCKET).createSignedUrl(m.storagePath,3600);
+  if(error)throw error;
+  return data&&data.signedUrl||null;
+}
+async function uploadAllMedia(){
+  if(!selectedMedia.length)return [];
+  mediaUploading=true;
+  $('chatSend').disabled=true;
+  const original=selectedMedia.slice();
+  try{
+    const out=[];
+    for(let i=0;i<original.length;i++){
+      toast(`Uploading ${i+1}/${original.length}…`);
+      out.push(await uploadMedia(original[i]));
+    }
+    return out;
+  }finally{
+    mediaUploading=false;$('chatSend').disabled=false;
+  }
+}
+function mediaNode(m){
+  const wrap=document.createElement('div');wrap.className='msg-media';
+  if(!m)return wrap;
+  const loading=document.createElement('div');loading.style.cssText='font-size:10px;color:var(--cream-dim);';
+  loading.textContent='Loading media…';wrap.appendChild(loading);
+  getMediaUrl(m).then(url=>{
+    loading.remove();
+    if(!url){loading.textContent='Media unavailable.';wrap.appendChild(loading);return;}
+    if(m.kind==='image'||m.kind==='gif'){
+      const img=document.createElement('img');img.src=url;img.alt=m.name||'Image';img.loading='lazy';wrap.appendChild(img);
+    }else if(m.kind==='video'){
+      const v=document.createElement('video');v.src=url;v.controls=true;v.playsInline=true;v.preload='metadata';wrap.appendChild(v);
+    }else if(m.kind==='audio'){
+      const a=document.createElement('audio');a.src=url;a.controls=true;wrap.appendChild(a);
+    }else{
+      const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener';a.textContent=`📎 ${m.name||'Attachment'}`;wrap.appendChild(a);
+    }
+    const actions=document.createElement('div');actions.className='media-actions';
+    const download=document.createElement('a');download.href=url;download.target='_blank';download.rel='noopener';download.download=m.name||'media';download.textContent='Download';
+    actions.appendChild(download);
+    const reuse=document.createElement('button');reuse.type='button';reuse.textContent='Reuse / send again';
+    reuse.addEventListener('click',()=>reuseMedia(m));actions.appendChild(reuse);wrap.appendChild(actions);
+  }).catch(err=>{console.error(err);loading.textContent='Media unavailable — check Storage setup.'});
+  return wrap;
+}
+function reuseMedia(m){
+  if(!m||!m.storagePath||!myName)return;
+  const payload={name:myName,uid:firebaseUser&&firebaseUser.uid||'',text:'',at:now(),media:[{
+    name:m.name||'Reused media',type:m.type||'',kind:m.kind||'file',size:m.size||0,storagePath:m.storagePath
+  }]};
+  if(replyingTo)payload.replyTo={key:replyingTo.key||'',name:replyingTo.name||'Message',text:String(replyingTo.text||'').slice(0,500)};
+  MSGS.push(payload).then(()=>toast('Media reused and sent.')).catch(()=>toast("Couldn't reuse the media — check your connection"));
+}
+
+async function pasteImageFromClipboard(){
+  try{
+    const items=await navigator.clipboard.read();
+    let found=false;
+    for(const item of items){
+      const type=item.types.find(t=>t.startsWith('image/'));
+      if(type){
+        const blob=await item.getType(type);
+        addSelectedFiles([new File([blob],`pasted-${Date.now()}.${type.split('/')[1]||'png'}`,{type})]);
+        found=true;break;
+      }
+    }
+    if(!found)toast('No image found in the clipboard.');
+  }catch(e){
+    toast('Clipboard image access was blocked. Copy an image, then paste directly into the message box.');
+  }
+}
+async function startVoiceRecording(){
+  if(mediaRecorder){stopVoiceRecording();return}
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.MediaRecorder){
+    toast('Voice recording is not supported in this browser.');return
+  }
+  try{
+    mediaStream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const preferred=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t=>MediaRecorder.isTypeSupported(t));
+    const mediaMime=preferred||'';
+    mediaRecorder=new MediaRecorder(mediaStream,mediaMime?{mimeType:mediaMime}:undefined);
+    voiceMime=mediaRecorder.mimeType||mediaMime||'audio/webm';
+    voiceChunks=[];
+    mediaRecorder.ondataavailable=e=>{if(e.data&&e.data.size)voiceChunks.push(e.data)};
+    mediaRecorder.onstop=()=>{
+      const blob=new Blob(voiceChunks,{type:voiceMime});
+      const ext=voiceMime.includes('mp4')?'m4a':'webm';
+      addSelectedFiles([new File([blob],`voice-note-${Date.now()}.${ext}`,{type:voiceMime})]);
+      voiceChunks=[];voiceMime='';
+    };
+    mediaRecorder.start();
+    $('voiceRecord').textContent='⏹️';
+    $('voiceRecord').title='Stop recording';
+    $('voiceRecord').classList.add('recording');
+    toast('Recording… tap again to stop.');
+  }catch(e){toast('Microphone permission was denied or unavailable.')}
+}
+function stopVoiceRecording(){
+  if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
+  if(mediaStream){mediaStream.getTracks().forEach(t=>t.stop());mediaStream=null}
+  mediaRecorder=null;
+  $('voiceRecord').textContent='🎙️';
+  $('voiceRecord').title='Voice note';
+  $('voiceRecord').classList.remove('recording');
+}
+
+/* ---------------- CHAT + MESSAGE REPLIES ---------------- */
+function listenChat(){
+  const q=MSGS.limitToLast(300);
+  listen(q,'child_added',(snap,prevKey)=>addMessage(snap.key,snap.val(),prevKey),
+    ()=>{$('syncStatus').textContent="Having trouble connecting — check your internet."});
+  listen(q,'value',()=>{chatReady=true});
+  listen(q,'child_removed',snap=>{
+    const el=chatEls.get(snap.key);
+    if(el){el.remove();chatEls.delete(snap.key)}
+  });
+  listen(q,'child_changed',snap=>{
+    const el=chatEls.get(snap.key);
+    if(el)updateMessageMeta(el,snap.val()||{});
+  });
+  listen(TYPING,'value',snap=>{typingCache=snap.val()||{};renderTyping()});
+}
+
+function formatTime(at){
+  if(!at)return '';
+  try{return new Date(at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}
+  catch(e){return ''}
+}
+function safeText(el,text){el.textContent=text||''}
+
+function updateMessageMeta(row,m){
+  if(row._ticks&&m.name===myName){
+    const otherName=myName==='Jimnah'?'Vivian':'Jimnah';
+    const wasRead=!!(m.readBy&&m.readBy[otherName]);
+    row._ticks.style.display='inline';
+    row._ticks.className='msg-ticks'+(wasRead?' read':'');
+    row._ticks.textContent=wasRead?'✓✓':'✓';
+  }
+  if(row._reactBtn){
+    const mine=!!(m.reactions&&m.reactions[myName]);
+    const count=m.reactions?Object.keys(m.reactions).length:0;
+    row._reactBtn.classList.toggle('active',mine);
+    row._reactBtn.innerHTML=(mine?'❤️':'🤍')+(count?` <span class="count">${count}</span>`:'');
+  }
+}
+
+function addMessage(key,m,prevKey){
+  if(!m||typeof m.text!=='string'||chatEls.has(key))return;
+  const box=$('chatBox');
+  const atBottom=box.scrollTop+box.clientHeight>=box.scrollHeight-35;
+
+  const row=document.createElement('div');
+  if(m.system){
+    row.className='msg system';
+    safeText(row,m.text);
+  }else{
+    row.className='msg '+(m.name===myName?'mine':'theirs');
+
+    const b=document.createElement('b');safeText(b,m.name||'');row.appendChild(b);
+
+    if(m.replyTo){
+      const quote=document.createElement('div');quote.className='reply-quote';
+      const qname=document.createElement('strong');
+      safeText(qname,`Replying to ${m.replyTo.name||'message'}`);
+      quote.appendChild(qname);
+      const qt=document.createElement('div');
+      safeText(qt,m.replyTo.text||'');
+      quote.appendChild(qt);
+      row.appendChild(quote);
+    }
+
+    if(m.text){
+      const body=document.createElement('div');safeText(body,m.text);row.appendChild(body);
+    }
+    if(Array.isArray(m.media))m.media.forEach(media=>row.appendChild(mediaNode(media)));
+    if(m.media&&m.media.type==='gif'){
+      const img=document.createElement('img');img.src=m.media.url;img.style.cssText='max-width:180px;border-radius:10px;display:block;margin-top:4px';
+      row.appendChild(img);
+    }
+
+    const timeRow=document.createElement('div');timeRow.className='msg-time-row';
+    const meta=document.createElement('span');meta.className='msg-time';safeText(meta,formatTime(m.at));
+    timeRow.appendChild(meta);
+    const ticks=document.createElement('span');ticks.className='msg-ticks';ticks.style.display='none';
+    timeRow.appendChild(ticks);
+    row.appendChild(timeRow);
+
+    const actions=document.createElement('div');actions.className='msg-actions';
+    const reactBtn=document.createElement('button');reactBtn.className='react-btn';reactBtn.type='button';
+    reactBtn.addEventListener('click',()=>toggleReaction(key));
+    actions.appendChild(reactBtn);
+
+    const reply=document.createElement('button');reply.className='reply-btn';reply.type='button';
+    reply.textContent='Reply';
+    reply.addEventListener('click',()=>startReply({
+      key,name:m.name||'Message',text:m.text||(Array.isArray(m.media)?'[attachment]':'')
+    }));
+    actions.appendChild(reply);row.appendChild(actions);
+
+    row._ticks=ticks;row._reactBtn=reactBtn;
+    updateMessageMeta(row,m);
+
+    // Mark as read + play a sound the first time THIS device sees an
+    // incoming message from the other person (not our own, not on the
+    // initial backlog load).
+    if(m.name&&m.name!==myName){
+      if(chatReady){
+        playNotifySound();
+      }
+      if(myName&&(!m.readBy||!m.readBy[myName])){
+        MSGS.child(key).child('readBy').child(myName).set(true).catch(()=>{});
+      }
+    }
+  }
+
+  const prev=prevKey?chatEls.get(prevKey):null;
+  if(prev)prev.after(row);
+  else if(!prevKey)box.prepend(row);
+  else box.appendChild(row);
+
+  chatEls.set(key,row);
+  if(m.system&&chatReady&&m.name!==myName)toast(m.text);
+  if(atBottom)box.scrollTop=box.scrollHeight;
+}
+
+function startReply(data){
+  replyingTo=data;
+  $('chatReplyingText').textContent=`Replying to ${data.name}: ${data.text}`;
+  $('chatReplying').classList.add('show');
+  $('chatInput').focus();
+}
+function cancelReply(){
+  replyingTo=null;
+  $('chatReplying').classList.remove('show');
+  $('chatReplyingText').textContent='';
+}
+function renderTyping(){
+  const t=now();
+  const names=Object.entries(typingCache)
+    .filter(([id,v])=>id!==deviceId&&v&&v.name&&v.name!==myName&&v.at&&(t-v.at<5000))
+    .map(([,v])=>v.name);
+  $('typingRow').textContent=names.length?`${names[0]} is typing…`:'';
+}
+function clearTyping(){
+  lastTypingSent=0;clearTimeout(typingStopTimer);
+  TYPING.child(deviceId).remove().catch(()=>{});
+}
+function onChatInput(){
+  if(!myName)return;
+  clearTimeout(typingStopTimer);
+  if($('chatInput').value.trim()){
+    const t=Date.now();
+    if(t-lastTypingSent>2000){
+      lastTypingSent=t;
+      TYPING.child(deviceId).set({name:myName,at:now()}).catch(()=>{});
+    }
+    typingStopTimer=setTimeout(clearTyping,4000);
+  }else clearTyping();
+}
+async function sendMsg(){
+  const input=$('chatInput');
+  const text=input.value.trim();
+  if((!text&&!selectedMedia.length)||!myName||mediaUploading)return;
+
+  const oldText=text;
+  const oldMedia=selectedMedia.slice();
+  const replySnapshot=replyingTo?{...replyingTo}:null;
+
+  try{
+    const media=await uploadAllMedia();
+    const payload={name:myName,uid:firebaseUser&&firebaseUser.uid||'',text,at:now()};
+    if(media.length)payload.media=media;
+    if(replySnapshot){
+      payload.replyTo={
+        key:replySnapshot.key||'',
+        name:replySnapshot.name||'Message',
+        text:String(replySnapshot.text||'').slice(0,500)
+      };
+    }
+    await MSGS.push(payload);
+    input.value='';selectedMedia=[];renderMediaPreview();clearTyping();cancelReply();
+  }catch(e){
+    console.error(e);
+    toast("Message didn't send. Check media storage rules/connection.");
+    input.value=oldText;
+    selectedMedia=oldMedia;renderMediaPreview();
+  }
+}
+
+/* ---------------- QUESTION ANSWERS ---------------- */
+function buildAnswerBox({who,parentRef,textKey,getNum,onReplyContext}){
+  const isAnswerer=myName===who;
+  const wrap=document.createElement('div');wrap.className='q-answer';
+  const label=document.createElement('label');
+  const ta=document.createElement('textarea');
+  ta.disabled=!isAnswerer;
+  ta.placeholder=isAnswerer?"Type your answer…":`Waiting for ${who} to answer…`;
+  const saveEl=document.createElement('div');saveEl.className='q-save';
+
+  makeAutosave(ta,parentRef.child(textKey),isAnswerer?saveEl:null);
+  wrap.append(label,ta,saveEl);
+
+  const box={wrap,ta,sent:false,btn:null};
+
+  if(isAnswerer){
+    const btn=document.createElement('button');
+    btn.type='button';btn.className='btn send full';btn.textContent='Send answer';
+    btn.addEventListener('click',()=>{
+      if(box.sent){
+        parentRef.child('sentAt').remove().catch(()=>{});
+        return;
+      }
+      if(!ta.value.trim()){toast('Write your answer first');return}
+      btn.disabled=true;
+      parentRef.update({[textKey]:ta.value,sentAt:now()})
+        .then(()=>MSGS.push({
+          name:myName,
+          uid:firebaseUser&&firebaseUser.uid||'',
+          text:`✓ ${who} answered ${getNum()}`,
+          at:now(),
+          system:true
+        }))
+        .catch(()=>toast("Couldn't send — check your connection"))
+        .finally(()=>{btn.disabled=false});
+    });
+    wrap.appendChild(btn);box.btn=btn;
+  }
+
+  box.update=(text,sentAt)=>{
+    box.sent=!!sentAt;
+    if(isAnswerer){
+      ta.disabled=box.sent;
+      label.textContent=box.sent?
+        `${who}'s answer — sent ✓`:
+        `${who}'s answer (draft until you send it)`;
+      box.btn.textContent=box.sent?'Edit answer':'Send answer';
+      syncTextarea(ta,text||'');
+    }else{
+      label.textContent=box.sent?`${who}'s answer ✓`:`${who}'s answer`;
+      ta.value=box.sent?(text||''):'';
+    }
+  };
+
+  box.update('',null);
+  return box;
+}
+
+function replyToQuestion(text,label){
+  startReply({key:'question',name:label,text});
+}
+
+/* Only ONE question's card ever exists in the DOM at a time. It is built
+   once per question index and then only UPDATED in place — never torn
+   down and recreated — so the textarea you're typing in (and the mobile
+   keyboard attached to it) never gets yanked out from under you. */
+/* ---------------- EMOJI PICKER ---------------- */
+const EMOJI_SET=['😀','😁','😂','🤣','😊','😍','🥰','😘','😉','😎','🤔','😏','😢','😭','😡','🥺',
+  '👍','👎','👏','🙏','💪','🤝','👀','🙌','❤️','🧡','💛','💚','💙','💜','🖤','🤍',
+  '💕','💞','💖','💗','💓','💘','💔','✨','🔥','🎉','🎂','🌹','🌙','☀️','😴','😅',
+  '🤗','😌','🙈','😇','🤤','😤','🤫','🫶'];
+(function buildEmojiGrid(){
+  const grid=$('emojiGrid');
+  EMOJI_SET.forEach(e=>{
+    const b=document.createElement('button');b.type='button';b.textContent=e;
+    b.addEventListener('click',()=>{
+      const ta=$('chatInput');
+      const start=ta.selectionStart??ta.value.length, end=ta.selectionEnd??ta.value.length;
+      ta.value=ta.value.slice(0,start)+e+ta.value.slice(end);
+      ta.focus();ta.selectionStart=ta.selectionEnd=start+e.length;
+    });
+    grid.appendChild(b);
+  });
+})();
+function closePickers(except){
+  if(except!=='emoji')$('emojiPanel').classList.remove('show');
+  if(except!=='gif')$('gifPanel').classList.remove('show');
+}
+$('emojiToggle').addEventListener('click',()=>{
+  const open=$('emojiPanel').classList.contains('show');
+  closePickers();
+  $('emojiPanel').classList.toggle('show',!open);
+});
+$('gifToggle').addEventListener('click',()=>{
+  const open=$('gifPanel').classList.contains('show');
+  closePickers();
+  $('gifPanel').classList.toggle('show',!open);
+});
+
+/* ---------------- GIF SEARCH (Tenor) ----------------
+   Sign up free at https://tenor.com/developer/dashboard and paste your
+   own key below — Tenor's free tier covers this kind of personal app
+   comfortably. Without a key, the picker shows instructions instead of
+   breaking anything else. */
+const TENOR_API_KEY='YOUR_TENOR_API_KEY';
+async function searchGifs(term){
+  const grid=$('gifGrid');grid.innerHTML='';
+  if(!TENOR_API_KEY||TENOR_API_KEY==='YOUR_TENOR_API_KEY'){
+    grid.innerHTML='<div class="gif-note">GIF search needs a free Tenor API key — grab one at tenor.com/developer/dashboard and add it to the code (search for TENOR_API_KEY).</div>';
+    return;
+  }
+  grid.innerHTML='<div class="gif-note">Searching…</div>';
+  try{
+    const url=`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(term||'love')}&key=${TENOR_API_KEY}&client_key=us_app&limit=12&media_filter=tinygif`;
+    const res=await fetch(url);
+    const data=await res.json();
+    grid.innerHTML='';
+    (data.results||[]).forEach(r=>{
+      const src=r.media_formats?.tinygif?.url;
+      if(!src)return;
+      const img=document.createElement('img');img.src=src;img.loading='lazy';
+      img.addEventListener('click',()=>{
+        sendGif(r.media_formats?.gif?.url||src);
+        closePickers();
+      });
+      grid.appendChild(img);
+    });
+    if(!grid.children.length)grid.innerHTML='<div class="gif-note">No results — try another search.</div>';
+  }catch(e){
+    grid.innerHTML='<div class="gif-note">Couldn\'t reach Tenor — check your connection.</div>';
+  }
+}
+$('gifSearchBtn').addEventListener('click',()=>searchGifs($('gifSearchInput').value.trim()));
+$('gifSearchInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();searchGifs(e.target.value.trim())}});
+function sendGif(url){
+  if(!myName)return;
+  const payload={name:myName,text:'',at:Date.now(),media:[{type:'gif',url}]};
+  if(replyingTo)payload.replyTo={key:replyingTo.key||'',name:replyingTo.name||'Message',text:String(replyingTo.text||'').slice(0,500)};
+  MSGS.push(payload);
+  cancelReply();
+}
+
+/* ---------------- NOTIFICATION SOUND ---------------- */
+let audioCtx=null, soundMuted=localStorage.getItem('usjv_muted')==='1';
+function updateMuteBtn(){
+  const b=$('muteBtn');
+  b.textContent=soundMuted?'🔕':'🔔';
+  b.classList.toggle('muted',soundMuted);
+  b.title=soundMuted?'Unmute notification sound':'Mute notification sound';
+}
+updateMuteBtn();
+$('muteBtn').addEventListener('click',()=>{
+  soundMuted=!soundMuted;
+  localStorage.setItem('usjv_muted',soundMuted?'1':'0');
+  updateMuteBtn();
+});
+function playNotifySound(){
+  if(soundMuted)return;
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended')audioCtx.resume();
+    const now0=audioCtx.currentTime;
+    [[880,0],[1180,0.09]].forEach(([freq,delay])=>{
+      const osc=audioCtx.createOscillator();
+      const gain=audioCtx.createGain();
+      osc.type='sine';osc.frequency.value=freq;
+      gain.gain.setValueAtTime(0.0001,now0+delay);
+      gain.gain.exponentialRampToValueAtTime(0.11,now0+delay+0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001,now0+delay+0.22);
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(now0+delay);osc.stop(now0+delay+0.24);
+    });
+  }catch(e){}
+}
+
+/* ---------------- MESSAGE REACTIONS ---------------- */
+function toggleReaction(key){
+  if(!myName)return;
+  const ref=MSGS.child(key).child('reactions').child(myName);
+  ref.once('value').then(snap=>{
+    ref.set(snap.val()?null:true);
+  });
+}
+
+let currentQIndex=-1, currentQCard=null, currentQAnswerBox=null;
+
+function buildCurrentQuestionCard(idx){
+  const question=QUESTIONS[idx];
+  const card=document.createElement('div');card.className='q-card current';
+
+  const num=document.createElement('div');num.className='q-num';num.textContent=`Q${idx+1} of ${QUESTIONS.length}`;
+  const text=document.createElement('div');text.className='q-text';text.textContent=question;
+  card.append(num,text);
+
+  const answerBox=buildAnswerBox({
+    who:'Vivian',
+    parentRef:QSTATE.child(`answers/${idx}`),
+    textKey:'Vivian',
+    getNum:()=>`Q${idx+1}`
+  });
+  card.appendChild(answerBox.wrap);
+
+  const statusEl=document.createElement('div');statusEl.className='q-status';statusEl.style.display='none';
+  statusEl.textContent='Answer sent and visible to the other person.';
+  card.appendChild(statusEl);
+
+  const replyRow=document.createElement('div');replyRow.className='question-reply';
+  const replyQuestion=document.createElement('button');
+  replyQuestion.type='button';replyQuestion.textContent='Reply to this question in chat';
+  replyQuestion.addEventListener('click',()=>replyToQuestion(question,`Q${idx+1}`));
+  replyRow.appendChild(replyQuestion);
+  card.appendChild(replyRow);
+
+  const controls=document.createElement('div');controls.className='q-controls';
+  const next=document.createElement('button');next.type='button';next.className='btn ghost full';
+  next.textContent=idx+1<QUESTIONS.length?'Move to next question →':'Finish questions';
+  next.addEventListener('click',()=>{
+    answerBox.ta._flush();
+    QSTATE.child('current').set(idx+1);
+  });
+  controls.appendChild(next);card.appendChild(controls);
+
+  return {card,answerBox,statusEl};
+}
+
+function renderQuestions(){
+  if(!qstate)return;
+  const total=QUESTIONS.length;
+  const current=Math.max(0,Math.min(Number(qstate.current||0),total));
+  $('qProgress').textContent=current>=total?
+    `All ${total} questions completed.`:
+    `Question ${current+1} of ${total}`;
+
+  const wrap=$('qCurrentWrap');
+
+  if(current>=total){
+    wrap.innerHTML='';
+    const done=document.createElement('div');done.className='finished';
+    done.textContent="That's all 21. 💛 Use Reset Questions whenever you want to start again.";
+    wrap.appendChild(done);
+    currentQIndex=-1;currentQCard=null;currentQAnswerBox=null;
+    renderQuestionHistory(current);
+    return;
+  }
+
+  if(current!==currentQIndex||!wrap.contains(currentQCard)){
+    // A genuinely new question — safe to rebuild from scratch here.
+    if(currentQAnswerBox&&currentQAnswerBox.ta)disposeTextarea(currentQAnswerBox.ta);
+    wrap.innerHTML='';
+    const built=buildCurrentQuestionCard(current);
+    wrap.appendChild(built.card);
+    currentQIndex=current;currentQCard=built.card;currentQAnswerBox=built.answerBox;
+    currentQCard._statusEl=built.statusEl;
+  }
+
+  // Same question as last render — update the EXISTING textarea in place.
+  const answer=(qstate.answers&&qstate.answers[current])||{};
+  currentQAnswerBox.update(answer.Vivian||'',answer.sentAt);
+  currentQCard._statusEl.style.display=answer.sentAt?'block':'none';
+
+  renderQuestionHistory(current);
+}
+
+/* Read-only reference list — safe to fully rebuild since nothing in here
+   is ever focused/typed into. */
+function renderQuestionHistory(current){
+  const history=$('qHistory');
+  if(history.style.display==='none')return; // skip work while collapsed
+  history.innerHTML='';
+  const shown=Math.min(current+1,QUESTIONS.length);
+  if(shown===0){
+    history.innerHTML='<div class="qh-empty-note">Nothing asked yet.</div>';
+    return;
+  }
+  for(let idx=shown-1;idx>=0;idx--){
+    const answer=(qstate.answers&&qstate.answers[idx])||{};
+    const item=document.createElement('div');item.className='qh-item';
+    const num=document.createElement('div');num.className='qh-num';
+    num.textContent=`Q${idx+1}`+(idx===current?' · current':'');
+    const q=document.createElement('div');q.className='qh-q';q.textContent=QUESTIONS[idx];
+    const a=document.createElement('div');
+    a.className='qh-a'+(answer.sentAt?'':' empty');
+    a.textContent=answer.sentAt?(answer.Vivian||''):'Not answered yet.';
+    item.append(num,q,a);
+    history.appendChild(item);
+  }
+}
+
+$('toggleHistoryBtn').addEventListener('click',()=>{
+  const history=$('qHistory');
+  const open=history.style.display!=='none';
+  history.style.display=open?'none':'block';
+  $('toggleHistoryBtn').textContent=open?'View previous questions & answers':'Hide previous questions & answers';
+  if(!open&&qstate)renderQuestionHistory(Math.max(0,Math.min(Number(qstate.current||0),QUESTIONS.length)));
+});
+
+function listenQuestions(){
+  listen(QSTATE,'value',snap=>{
+    const d=snap.val()||{};
+    qstate={
+      current:Number.isInteger(d.current)?d.current:0,
+      answers:d.answers||{}
+    };
+    renderQuestions();
+  });
+}
+
+function resetQuestions(){
+  if(!confirm('Reset all 21 questions and their saved answers so the conversation can start again from Q1?'))return;
+  if(currentQAnswerBox&&currentQAnswerBox.ta)disposeTextarea(currentQAnswerBox.ta);
+  currentQIndex=-1;currentQCard=null;currentQAnswerBox=null;
+  QSTATE.set({
+    current:0,
+    answers:{},
+    resetAt:now(),
+    resetBy:myName
+  }).then(()=>{
+    MSGS.push({
+      name:myName,
+      uid:firebaseUser&&firebaseUser.uid||'',
+      text:`↻ ${myName} reset the 21 questions. Starting again from Q1.`,
+      at:now(),
+      system:true
+    });
+    toast('Questions reset — Q1 is ready.');
+  }).catch(()=>toast("Couldn't reset the questions — check your connection"));
+}
+
+/* ---------------- DOHDOH QUESTIONS ---------------- */
+function buildHqCard(id){
+  const card=document.createElement('div');card.className='hq-card';
+  const textWrap=document.createElement('div');textWrap.className='hq-text';
+  const label=document.createElement('small');const qtext=document.createElement('span');
+  textWrap.append(label,qtext);card.appendChild(textWrap);
+
+  const v={card,label,qtext,ta:null,box:null,num:''};
+  v.box=buildAnswerBox({
+    who:'Jimnah',
+    parentRef:HQ.child(id),
+    textKey:'answer',
+    getNum:()=>v.num
+  });
+  v.ta=v.box.ta;
+  card.appendChild(v.box.wrap);
+
+  const replyRow=document.createElement('div');replyRow.className='question-reply';
+  const rq=document.createElement('button');rq.type='button';rq.textContent='Reply to this question in chat';
+  rq.addEventListener('click',()=>replyToQuestion(v.qtext.textContent,v.label.textContent));
+  replyRow.appendChild(rq);
+  card.appendChild(replyRow);
+
+  return v;
+}
+
+function renderHerQuestions(){
+  const canAdd=myName==='Vivian';
+  $('hqAddWrap').style.display=canAdd?'flex':'none';
+  $('hqLocked').style.display=canAdd?'none':'block';
+
+  const list=$('hqList');
+  const chronological=Object.entries(hqCache)
+    .filter(([,v])=>v&&typeof v.text==='string')
+    .sort((a,b)=>(a[1].at||0)-(b[1].at||0));
+  const numberById=new Map(chronological.map(([id],idx)=>[id,idx+1]));
+  const items=[...chronological].reverse(); // newest first — no scrolling needed to reach it
+
+  const ids=new Set(items.map(([id])=>id));
+  hqEls.forEach((v,id)=>{
+    if(!ids.has(id)){disposeTextarea(v.ta);v.card.remove();hqEls.delete(id)}
+  });
+
+  const empty=$('hqEmpty');
+  if(!items.length){
+    empty.textContent=canAdd?"Ask Vivian anything, whenever you want.":"Vivian (dohdoh) hasn't added a question yet.";
+    empty.style.display='block';return;
+  }
+  empty.style.display='none';
+
+  items.forEach(([id,q],i)=>{
+    let v=hqEls.get(id);
+    if(!v){v=buildHqCard(id);hqEls.set(id,v)}
+    const num=numberById.get(id);
+    v.label.textContent=`Q${num} — asked by Vivian (dohdoh)`;
+    v.qtext.textContent=q.text;
+    v.num=`Vivian's Q${num}`;
+    v.box.update(q.answer||'',q.sentAt);
+
+    if(q.sentAt&&!v.card.querySelector('.q-status')){
+      const status=document.createElement('div');status.className='q-status';
+      status.textContent='Answer sent and visible to the other person.';
+      v.card.insertBefore(status,v.card.querySelector('.question-reply'));
+    }
+    const atPos=list.children[i];
+    if(atPos!==v.card)list.insertBefore(v.card,atPos||null);
+  });
+}
+
+function listenHerQuestions(){
+  listen(HQ,'value',snap=>{hqCache=snap.val()||{};renderHerQuestions()});
+}
+function addHerQuestion(){
+  if(myName!=='Vivian')return;
+  const input=$('hqInput');const text=input.value.trim();
+  if(!text)return;
+  HQ.push({text,at:now(),answer:''})
+    .then(()=>MSGS.push({name:myName,uid:firebaseUser&&firebaseUser.uid||'',text:`❓ Vivian asked a new question: ${text}`,at:now(),system:true}))
+    .catch(()=>toast("Couldn't add that — check your connection"));
+  input.value='';input.focus();
+}
+
+/* ---------------- LIFECYCLE ---------------- */
+function enterDash(){
+  if(!firebaseUser){showAuth();return;}
+  detachAll();chatReady=false;
+  $('idStage').style.display='none';$('dashStage').style.display='block';
+  $('whoAmI').textContent=myName;
+  renderStatus();watchConnection();listenPresence();listenChat();listenQuestions();listenHerQuestions();
+}
+function leaveDash(){
+  flushAll();presenceOff();detachAll();clearTimeout(typingStopTimer);
+  presenceCache={};presenceReady=false;typingCache={};
+  qstate=null;hqCache={};isConnected=false;everConnected=false;
+  chatEls.clear();hqEls.clear();activeAreas.clear();chatReady=false;selectedMedia=[];renderMediaPreview();if(mediaRecorder)stopVoiceRecording();
+  currentQIndex=-1;currentQCard=null;currentQAnswerBox=null;
+  $('chatBox').innerHTML='';$('qCurrentWrap').innerHTML='';$('qHistory').innerHTML='';$('hqList').innerHTML='';
+  $('hqEmpty').style.display='none';$('typingRow').textContent='';
+  $('presenceLine').textContent='';cancelReply();
+}
+
+document.querySelectorAll('#idStage [data-who]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    myName=btn.dataset.who;store.set('usjv_who',myName);enterDash();
+  });
+});
+
+function identityFromEmail(email){
+  const e=String(email||'').toLowerCase();
+  if(e==='jimnahkabiria@gmail.com')return 'Jimnah';
+  if(e==='viviankarimi1@gmail.com')return 'Vivian';
+  return null;
+}
+
+$('switchWho').addEventListener('click',async e=>{
+  e.preventDefault();
+  if(supabaseClient)await supabaseClient.auth.signOut().catch(()=>{});
+  await auth.signOut();
+});
+
+$('chatInput').addEventListener('input',onChatInput);
+$('chatInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){
+    e.preventDefault();sendMsg();
+  }
+});
+$('chatSend').addEventListener('mousedown',e=>e.preventDefault());
+$('chatSend').addEventListener('click',sendMsg);
+$('cancelReply').addEventListener('click',cancelReply);
+
+$('resetQuestions').addEventListener('click',resetQuestions);
+
+$('mediaChoose').addEventListener('click',()=>$('mediaInput').click());
+$('mediaInput').addEventListener('change',e=>{addSelectedFiles(e.target.files);e.target.value=''});
+$('galleryChoose').addEventListener('click',()=>$('galleryInput').click());
+$('galleryInput').addEventListener('change',e=>{addSelectedFiles(e.target.files);e.target.value=''});
+$('cameraChoose').addEventListener('click',()=>$('cameraInput').click());
+$('cameraInput').addEventListener('change',e=>{addSelectedFiles(e.target.files);e.target.value=''});
+$('voiceRecord').addEventListener('click',()=>{
+  if(mediaRecorder)stopVoiceRecording();else startVoiceRecording();
+});
+$('chatInput').addEventListener('paste',e=>{
+  const files=[...(e.clipboardData?.files||[])].filter(f=>f.type.startsWith('image/'));
+  if(files.length){e.preventDefault();addSelectedFiles(files)}
+});
+$('chatInput').addEventListener('dragover',e=>e.preventDefault());
+$('chatInput').addEventListener('drop',e=>{
+  e.preventDefault();
+  const files=[...(e.dataTransfer?.files||[])];
+  if(files.length)addSelectedFiles(files);
+});
+
+$('hqAddBtn').addEventListener('mousedown',e=>e.preventDefault());
+$('hqAddBtn').addEventListener('click',addHerQuestion);
+$('hqInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.isComposing){e.preventDefault();addHerQuestion()}
+});
+
+document.addEventListener('visibilitychange',()=>{if(document.hidden)flushAll()});
+window.addEventListener('pagehide',flushAll);
+setInterval(renderTyping,1500);
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+function authMessage(err){
+  const code=err&&err.code||'';
+  const map={
+    'auth/invalid-email':'Enter a valid email address.',
+    'auth/invalid-credential':'Email or password is incorrect.',
+    'auth/user-disabled':'This account has been disabled.',
+    'auth/too-many-requests':'Too many attempts. Wait a while and try again.',
+    'auth/network-request-failed':'Network error. Check your connection.'
+  };
+  return map[code]||'Sign-in failed. Check your Firebase Authentication setup.';
+}
+
+$('authLogin').addEventListener('click',async()=>{
+  const email=$('authEmail').value.trim();
+  const password=$('authPassword').value;
+  $('authError').textContent='';
+  if(!email||!password){$('authError').textContent='Enter both email and password.';return}
+  $('authLogin').disabled=true;$('authLogin').textContent='Signing in…';
+  try{
+    if(!supabaseConfigured()){throw new Error('SUPABASE_NOT_CONFIGURED')}
+    const mapped=identityFromEmail(email);
+    if(!mapped){$('authError').textContent='Only the two authorized accounts can enter this room.';return}
+    const {data:sbData,error:sbError}=await supabaseClient.auth.signInWithPassword({email,password});
+    if(sbError||!sbData.user){
+      throw sbError||new Error('Supabase sign-in failed');
+    }
+    supabaseUser=sbData.user;
+    try{
+      await auth.signInWithEmailAndPassword(email,password);
+    }catch(firebaseErr){
+      await supabaseClient.auth.signOut().catch(()=>{});
+      supabaseUser=null;
+      throw firebaseErr;
+    }
+  }catch(err){$('authError').textContent=err.message==='SUPABASE_NOT_CONFIGURED'?'Add your Supabase Project URL and publishable key to this HTML first.':(authMessage(err));}
+  finally{$('authLogin').disabled=false;$('authLogin').textContent='Sign in'}
+});
+$('authPassword').addEventListener('keydown',e=>{if(e.key==='Enter')$('authLogin').click()});
+$('authLogout').addEventListener('click',async()=>{if(supabaseClient)await supabaseClient.auth.signOut().catch(()=>{});await auth.signOut()});
+
+function showAuth(){
+  $('authOverlay').classList.remove('hidden');
+  $('idStage').style.display='none';$('dashStage').style.display='none';
+}
+function showIdentity(){
+  $('authOverlay').classList.add('hidden');
+  $('idStage').style.display='block';$('dashStage').style.display='none';
+}
+
+auth.onAuthStateChanged(async user=>{
+  firebaseUser=user;authReady=true;
+  if(!user){
+    if(supabaseClient)await supabaseClient.auth.signOut().catch(()=>{});
+    supabaseUser=null;
+    leaveDash();myName=null;store.remove('usjv_who');showAuth();
+    return;
+  }
+  const mappedIdentity=identityFromEmail(user.email);
+  if(!mappedIdentity){
+    await auth.signOut();
+    $('authError').textContent='This Firebase account is not authorized for this private room.';
+    return;
+  }
+  try{
+    if(!supabaseClient)throw new Error('Supabase Storage is not configured.');
+    const {data:sbData,error:sbError}=await supabaseClient.auth.getUser();
+    if(sbError||!sbData.user)throw new Error('Supabase sign-in is required. Sign in again.');
+    supabaseUser=sbData.user;
+    if(String(sbData.user.email||'').toLowerCase()!==String(user.email||'').toLowerCase())throw new Error('Firebase and Supabase accounts do not match.');
+  }catch(err){
+    await auth.signOut();
+    $('authError').textContent=err.message;
+    return;
+  }
+  myName=mappedIdentity;store.set('usjv_who',myName);
+  $('authOverlay').classList.add('hidden');
+  enterDash();
+});
+</script>
+</body>
+</html>
