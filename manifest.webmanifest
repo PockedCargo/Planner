@@ -1,8 +1,8 @@
 {
   "name": "Us",
   "short_name": "Us",
-  "description": "Private chat and 21 Questions, just between two people.",
-  "start_url": "./us.html",
+  "description": "Private chat, 21 Questions, and messaging — v0.2",
+  "start_url": "./us_rewritten.html",
   "scope": "./",
   "display": "standalone",
   "background_color": "#140d17",
